@@ -46,6 +46,12 @@
 - **计费以官网为准**：页面价格取自官网价格接口，credits = 美元 × 8；实际以账单为准。
 - **部分模型限制**：`imagen-4.0`、`grok-imagine-2.0-ext` 不支持参考图；`seedream-4.5` 不支持 1K；`seedream-5-0-pro`、gemini 3 系列、imagen 单次只能出 1 张——页面已按官方文档自动限制选项。
 
+## 🎨 主题
+
+- **配色**：大面积灰（页面 `#d4d4d4`、侧栏 `#c2c2c2`、面板 `#dedede`）+ 小面积白（输入框、主按钮、激活项、徽章、图片框），像素点阵底纹
+- **像素风**：全部零圆角、2–3px 粗描边、无模糊的硬阴影（`3px 3px 0`）、阶梯式进度条与开关、方块复选框
+- **字体**：内嵌 [Silkscreen](https://fonts.google.com/specimen/Silkscreen)（SIL Open Font License 1.1）用于拉丁字母与数字；中文使用系统字体，保证可读性。字体以 base64 内嵌，**不依赖任何外部 CDN**
+
 ## 📄 License
 
-MIT
+MIT（内嵌字体 Silkscreen 遵循 SIL Open Font License 1.1）
