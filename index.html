@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APIMARTZS · 图像 Playground</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111'/><text x='50' y='68' font-size='58' font-family='Arial' font-weight='bold' fill='%23fff' text-anchor='middle'>A</text></svg>">
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --line:#e5e7eb; --line-soft:#f0f1f3;
+  --text:#111827; --muted:#6b7280; --faint:#9ca3af;
+  --ink:#111111; --hover:#f7f7f8; --accent:#111111;
+  --ok:#15803d; --err:#dc2626; --warn:#b45309;
+  --radius:8px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font-family:inherit;font-size:13px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#d9dbe0;border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------------- 通用控件 ---------------- */
+.label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+.input,select.input,textarea.input{
+  width:100%;background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:8px 10px;color:var(--text);outline:none;transition:border-color .15s;
+}
+select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8.5 1.5 4h9z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;padding-right:26px}
+.input:focus{border-color:#111}
+textarea.input{resize:vertical;min-height:96px;line-height:1.6}
+.input::placeholder{color:var(--faint)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);
+  background:#fff;color:var(--text);border-radius:var(--radius);padding:8px 12px;cursor:pointer;
+  transition:background .15s,border-color .15s;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn-dark{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600;letter-spacing:.3px}
+.btn-dark:hover{background:#000}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-icon{width:36px;padding:8px 0}
+.btn-sm{padding:5px 10px;font-size:12px}
+.switch{position:relative;width:34px;height:18px;border-radius:9px;background:#e5e7eb;transition:background .18s;flex:0 0 auto;cursor:pointer}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .18s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch.on{background:#111}
+.switch.on::after{transform:translateX(16px)}
+.checkbox{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;color:var(--muted);font-size:12.5px}
+.checkbox input{accent-color:#111;width:14px;height:14px}
+.hint{font-size:11.5px;color:var(--faint);line-height:1.6}
+
+/* ---------------- 登录门 ---------------- */
+.gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#fff;padding:24px}
+.gate-card{width:100%;max-width:420px;border:1px solid var(--line);border-radius:14px;padding:30px 28px 22px}
+.gate-logo{width:44px;height:44px;border-radius:11px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;margin:0 auto 14px}
+.gate h1{margin:0 0 4px;font-size:19px;text-align:center}
+.gate .sub{text-align:center;color:var(--muted);font-size:12.5px;margin:0 0 22px}
+.gate .row{display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px}
+.gate .row input{flex:1;border:none;outline:none;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:transparent}
+.gate .msg{min-height:18px;font-size:12.5px;color:var(--err);margin-top:10px}
+.gate .msg.ok{color:var(--ok)}
+.gate .tips{margin:16px 0 0;padding:14px 0 0;border-top:1px solid var(--line-soft);color:var(--faint);font-size:11.5px;line-height:1.9;list-style:none}
+.gate .tips li::before{content:"· ";color:#111}
+
+/* ---------------- 布局 ---------------- */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:112px;flex:0 0 112px;border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:12px}
+.logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;letter-spacing:.4px}
+.logo-mark{width:18px;height:18px;border-radius:5px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.side-btns{display:flex;flex-direction:column;gap:6px}
+.side-btns .btn{padding:6px 8px;font-size:12px;justify-content:center}
+.side-nav{display:flex;flex-direction:column;gap:2px;margin-top:8px}
+.side-nav button{display:flex;align-items:center;gap:7px;border:none;background:transparent;color:var(--muted);
+  padding:7px 8px;border-radius:6px;cursor:pointer;text-align:left;font-size:12.5px;width:100%}
+.side-nav button:hover{background:var(--hover);color:var(--text)}
+.side-nav button.active{background:var(--hover);color:var(--text);font-weight:600}
+.side-bottom{margin-top:auto}
+
+.form-col{width:262px;flex:0 0 262px;border-right:1px solid var(--line);overflow-y:auto;padding:16px 14px 24px}
+.form-col .field{margin-bottom:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.toggle-row .t{font-size:12.5px;color:var(--text)}
+.run-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.run-row .btn-dark{flex:1;padding:10px 12px}
+.cost{font-size:11.5px;color:var(--muted);text-align:center;margin-top:8px}
+.stage{flex:1;overflow-y:auto;position:relative;padding:18px 20px 40px}
+.stage-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.stage-head h2{margin:0;font-size:14px;font-weight:600}
+.stage-head .meta{color:var(--faint);font-size:11.5px}
+.empty{display:flex;align-items:center;justify-content:center;height:60vh;color:var(--faint);font-size:13px}
+
+/* ---------------- 参考图 ---------------- */
+.refs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.ref{position:relative;width:54px;height:54px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fafafa}
+.ref img{width:100%;height:100%;object-fit:cover;display:block}
+.ref button{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:10px;line-height:1;cursor:pointer;padding:0}
+.drop{border:1px dashed var(--line);border-radius:var(--radius);padding:10px;text-align:center;color:var(--faint);font-size:12px;cursor:pointer}
+.drop:hover,.drop.over{border-color:#111;color:var(--text)}
+
+/* ---------------- 结果卡片 ---------------- */
+.card{border:1px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.card-head .name{font-weight:600;font-size:12.5px}
+.card-head .m{color:var(--faint);font-size:11.5px}
+.card-head .acts{margin-left:auto;display:flex;gap:6px}
+.badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.badge.run{color:var(--warn);border-color:#fde68a;background:#fffbeb}
+.badge.ok{color:var(--ok);border-color:#bbf7d0;background:#f0fdf4}
+.badge.err{color:var(--err);border-color:#fecaca;background:#fef2f2}
+.bar{height:2px;background:var(--line-soft);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:#111;transition:width .4s}
+.bar.indet i{width:35%!important;animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{0%{margin-left:-35%}100%{margin-left:100%}}
+.card-body{padding:11px 12px}
+.prompt{white-space:pre-wrap;word-break:break-word;color:#374151;font-size:12.5px;line-height:1.65}
+.prompt.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{font-size:11px;color:var(--muted);background:#fafafa;border:1px solid var(--line-soft);border-radius:5px;padding:2px 7px}
+.err-box{margin-top:8px;font-size:12px;color:var(--err);background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:7px 9px;word-break:break-word}
+.imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:10px}
+.imgbox{position:relative;border:1px solid var(--line-soft);border-radius:8px;overflow:hidden;background:#fafafa;aspect-ratio:1/1}
+.imgbox img{width:100%;height:100%;object-fit:contain;display:block;cursor:zoom-in}
+.imgbox .ops{position:absolute;inset:auto 0 0 0;display:flex;gap:6px;padding:7px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.55));opacity:0;transition:opacity .16s}
+.imgbox:hover .ops{opacity:1}
+.imgbox .ops .btn{flex:1;padding:4px 6px;font-size:11px;border-color:transparent}
+.skel{border-radius:8px;aspect-ratio:1/1;background:linear-gradient(100deg,#f3f4f6 30%,#fafafa 50%,#f3f4f6 70%);background-size:220% 100%;animation:sk 1.3s linear infinite}
+@keyframes sk{0%{background-position:120% 0}100%{background-position:-20% 0}}
+
+/* ---------------- 模型广场 ---------------- */
+.mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.mcard{border:1px solid var(--line);border-radius:10px;padding:12px}
+.mcard .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.mcard .id{font-weight:600;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.mcard .tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.mcard .use{margin-top:10px;display:flex;gap:6px}
+
+/* ---------------- 灯箱 / toast ---------------- */
+.lightbox{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.96);display:flex;align-items:center;justify-content:center;padding:28px}
+.lightbox img{max-width:100%;max-height:76vh;border:1px solid var(--line);border-radius:10px;background:#fff}
+.lb-bar{position:absolute;left:28px;right:28px;bottom:24px;display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fff}
+.lb-bar .p{flex:1;font-size:12.5px;color:#374151;max-height:56px;overflow:auto}
+.toasts{position:fixed;right:16px;bottom:16px;z-index:80;display:flex;flex-direction:column;gap:8px}
+.toast{background:#111;color:#fff;border-radius:8px;padding:9px 13px;font-size:12.5px;max-width:340px;box-shadow:0 8px 24px rgba(0,0,0,.18);animation:tin .18s ease}
+.toast.err{background:#b91c1c}
+.toast.ok{background:#166534}
+@keyframes tin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;display:inline-block;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+@media (max-width:900px){
+  .app{flex-direction:column;height:auto;overflow:visible}
+  .sidebar{width:100%;flex:none;flex-direction:row;align-items:center;border-right:none;border-bottom:1px solid var(--line);overflow-x:auto}
+  .side-nav{flex-direction:row;margin:0}
+  .side-bottom{margin:0}
+  .form-col{width:100%;flex:none;border-right:none;border-bottom:1px solid var(--line)}
+  .stage{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== 密钥验证门 ==================== -->
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <div class="gate-logo">A</div>
+    <h1>APIMARTZS</h1>
+    <p class="sub">图像 Playground · APIMart 接口</p>
+    <label class="label" for="gateKey">API Key</label>
+    <div class="row">
+      <input id="gateKey" type="password" placeholder="sk-xxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+      <button id="gateEye" class="btn btn-sm" style="border:none;background:transparent;color:#9ca3af">显示</button>
+    </div>
+    <label class="checkbox" style="margin-bottom:12px">
+      <input type="checkbox" id="gateRemember" checked><span>在此浏览器记住密钥（只存本机 localStorage）</span>
+    </label>
+    <button id="gateGo" class="btn btn-dark" style="width:100%;padding:10px">验证并进入</button>
+    <div id="gateMsg" class="msg"></div>
+    <ul class="tips">
+      <li>校验方式是拉取一次模型列表（免费，不消耗额度）</li>
+      <li>密钥只存在你自己的浏览器，不会上传到任何服务器</li>
+      <li>纯前端页面：浏览器直连 <span style="font-family:monospace">api.aishuch.com</span>（APIMart 接口）</li>
+      <li>生成记录与图片存在本机，断网也能翻看历史</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== 主体 ==================== -->
+<div id="app" class="app" hidden>
+  <!-- 左侧栏 -->
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-mark">A</span>APIMARTZS</div>
+    <div class="side-btns">
+      <button class="btn btn-sm" id="btnConsole">控制台</button>
+      <button class="btn btn-sm btn-dark" id="btnPlayground">PLAYGROUND</button>
+    </div>
+    <nav class="side-nav">
+      <button data-cat="text">文本</button>
+      <button data-cat="image" class="active">图像</button>
+      <button data-cat="video">视频</button>
+      <button data-cat="audio">音频</button>
+    </nav>
+    <div class="side-bottom">
+      <nav class="side-nav">
+        <button id="btnModels">模型广场</button>
+        <button id="btnHistory">生成记录</button>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- 中间表单 -->
+  <section class="form-col" id="formCol">
+    <div class="field">
+      <label class="label" for="familySel">模型</label>
+      <select id="familySel" class="input"></select>
+    </div>
+    <div class="field">
+      <label class="label" for="modelSel">模型 ID</label>
+      <select id="modelSel" class="input"></select>
+      <div class="hint" id="modelHint" style="margin-top:6px"></div>
+    </div>
+    <div class="field">
+      <label class="label" for="promptInput">提示词</label>
+      <textarea id="promptInput" class="input" placeholder="cute things."></textarea>
+      <div class="chips" id="promptChips"></div>
+    </div>
+    <div class="field" id="resolutionField">
+      <div class="row2">
+        <div>
+          <label class="label" for="resolutionSel">分辨率</label>
+          <select id="resolutionSel" class="input"></select>
+        </div>
+        <div>
+          <label class="label" for="sizeSel">宽高比</label>
+          <select id="sizeSel" class="input"></select>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="row2">
+        <div>
+          <label class="label" for="countSel">图像数量</label>
+          <select id="countSel" class="input"></select>
+        </div>
+        <div id="qualityWrap">
+          <label class="label" for="qualitySel">质量</label>
+          <select id="qualitySel" class="input"></select>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label class="checkbox"><input type="checkbox" id="moderationChk"><span>内容审核</span></label>
+    </div>
+    <div class="toggle-row" id="officialRow">
+      <span class="t">官方渠道兜底</span>
+      <span class="switch" id="officialSw"></span>
+    </div>
+    <div class="field">
+      <label class="label">参考图像 <span class="hint" id="refHint"></span></label>
+      <div class="drop" id="dropZone">点击或拖拽添加参考图</div>
+      <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      <div class="refs" id="refList"></div>
+    </div>
+    <div class="run-row">
+      <button class="btn btn-icon" id="resetBtn" title="重置参数">↺</button>
+      <button class="btn btn-dark" id="runBtn">RUN</button>
+    </div>
+    <div class="cost" id="costLine">—</div>
+  </section>
+
+  <!-- 右侧舞台 -->
+  <main class="stage" id="stage">
+    <div class="stage-head">
+      <h2 id="stageTitle">生成结果</h2>
+      <div class="meta" id="stageMeta"></div>
+    </div>
+    <div id="stageBody">
+      <div class="empty">暂无生成记录。</div>
+    </div>
+  </main>
+</div>
+
+<div id="lightbox" class="lightbox" hidden>
+  <img id="lbImg" alt="预览">
+  <div class="lb-bar">
+    <div class="p" id="lbPrompt"></div>
+    <button class="btn btn-sm" id="lbCopy">复制提示词</button>
+    <button class="btn btn-sm btn-dark" id="lbDownload">下载原图</button>
+    <button class="btn btn-sm" id="lbClose">关闭</button>
+  </div>
+</div>
+<div id="toasts" class="toasts"></div>
+
+<script>
+'use strict';
+/* =========================================================================
+ * APIMARTZS — 图像 Playground（纯前端）
+ * 接口：POST {base}/v1/images/generations  →  GET {base}/v1/tasks/{task_id}
+ * 密钥校验：GET {base}/v1/models（免费）
+ * ======================================================================= */
+
+const BASES = ['https://api.aishuch.com', 'https://api.apimart.ai'];
+const LS_KEY = 'az.key', LS_FORM = 'az.form', LS_HIST = 'az.history';
+const CREDIT_RATE = 8;        // 1 美元 = 8 credits（与官网 playground 口径一致）
+const MAX_HISTORY = 200;
+
+const state = {
+  key: '', base: BASES[0], models: [], byId: new Map(), families: [],
+  history: [], pollers: new Map(), blobUrls: new Map(), refs: [],
+  view: 'image', official: false,
+};
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+const esc = (v) => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type; el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); }, 3000);
+}
+function fmtTime(ts){const d=new Date(ts),p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+function fmtDur(ms){ if(ms==null) return '—'; return ms<1000?ms+'ms':(ms<60000?(ms/1000).toFixed(1)+'s':Math.floor(ms/60000)+'m'+Math.round(ms%60000/1000)+'s'); }
+function credits(usd){ return usd==null ? null : usd*CREDIT_RATE; }
+function money(usd){ if(usd==null) return '—'; return '$'+ (Math.round(usd*1e6)/1e6); }
+function credText(usd){ const c=credits(usd); return c==null?'—':(Math.round(c*1000)/1000)+' CREDITS'; }
+function slug(t,max=40){ return (String(t||'image').replace(/[\\/:*?"<>|\s]+/g,'_').slice(0,max))||'image'; }
+
+/* ---------------------------------- 模型目录 -------------------------------- */
+
+const FAMILIES = [
+  { id:'gpt-image-2.5', prefer:'gpt-image-2.5-flare',      label:'GPT-Image-2.5',        sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9','9:21','1:2','2:1','1:3','3:1'], resolutions:['1k','2k','4k'], quality:['low','medium','high'], maxN:4, maxRefs:16, refs:true, note:'支持比例与精确像素尺寸' },
+  { id:'gpt-image-2', prefer:'gpt-image-2',        label:'GPT-Image-2',          sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9','9:21','1:2','2:1','1:3','3:1'], resolutions:['1k','2k','4k'], quality:null, maxN:4, maxRefs:15, refs:true, note:'异步任务，支持文生图 / 图生图' },
+  { id:'gpt-image-1', prefer:'gpt-image-1.5',        label:'GPT-Image-1 / 1.5',    sizes:['auto','1:1','3:2','2:3'], resolutions:['1k','2k'], quality:['low','medium','high','auto'], maxN:4, maxRefs:15, refs:true, note:'支持透明背景与多种输出格式' },
+  { id:'seedream-5', prefer:'seedream-5-0-pro',         label:'Seedream 5.0',         sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9','2:1'], resolutions:['1k','2k','4k'], quality:null, maxN:4, maxRefs:10, refs:true, note:'支持精确像素与图层拆分' },
+  { id:'seedream-4', prefer:'seedream-4-5',         label:'Seedream 4.0 / 4.5',   sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9'], resolutions:['1k','2k','4k'], quality:null, maxN:4, maxRefs:10, refs:true, note:'文本转图片 / 图生图 / 图像编辑' },
+  { id:'flux-2', prefer:'flux-2-pro',             label:'Flux 2.0',             sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9'], resolutions:['1MP','2MP','3MP','4MP'], quality:null, maxN:4, maxRefs:8, refs:true, note:'Flex / Pro / Max，最高 4MP' },
+  { id:'flux-kontext', prefer:'flux-kontext-pro',       label:'Flux Kontext',         sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9'], resolutions:null, quality:null, maxN:4, maxRefs:4, refs:true, note:'文生图与参考图编辑' },
+  { id:'nano-banana-2', prefer:'gemini-3.1-flash-image-preview',      label:'Nano Banana 2',        sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9','1:4','4:1','1:8','8:1'], resolutions:['1k','2k','4k'], quality:null, maxN:4, maxRefs:14, refs:true, note:'Gemini 3.1 Flash Image，支持极端宽高比' },
+  { id:'nano-banana-pro', prefer:'gemini-3-pro-image-preview',    label:'Nano Banana Pro',      sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9'], resolutions:['1k','2k','4k'], quality:null, maxN:4, maxRefs:14, refs:true, note:'Gemini 3 Pro Image，综合稳定性好' },
+  { id:'nano-banana', prefer:'gemini-2.5-flash-image-preview',        label:'Nano Banana',          sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9'], resolutions:['1k'], quality:null, maxN:4, maxRefs:14, refs:true, note:'Gemini 2.5 Flash Image' },
+  { id:'imagen-4.0', prefer:'imagen-4.0-apimart',         label:'Imagen 4.0',           sizes:['16:9','1:1','4:3','3:4','9:16'], resolutions:null, quality:null, maxN:4, maxRefs:0, refs:false, note:'仅支持文生图' },
+  { id:'qwen-image-3', prefer:'qwen-image-3.0',       label:'Qwen Image 3.0',       sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3'], resolutions:['1k','2k'], quality:null, maxN:6, maxRefs:3, refs:true, note:'标准版与 Pro 版' },
+  { id:'qwen-image-2', prefer:'qwen-image-2.0',       label:'Qwen Image 2.0',       sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3'], resolutions:['1k','2k'], quality:null, maxN:6, maxRefs:3, refs:true, note:'支持文生图 / 图生图' },
+  { id:'z-image-turbo', prefer:'z-image-turbo',      label:'Z-Image Turbo',        sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3'], resolutions:['1k','2k'], quality:null, maxN:4, maxRefs:4, refs:true, note:'极速出图' },
+  { id:'grok-imagine-2', prefer:'grok-imagine-image-2.0',     label:'Grok Imagine 2.0',     sizes:['1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9','2:1','1:2'], resolutions:['1k','2k'], quality:['low','medium','high'], maxN:10, maxRefs:3, refs:true, note:'支持 1–10 张输出' },
+  { id:'grok-imagine', prefer:'grok-imagine-1.5-apimart',       label:'Grok Imagine',         sizes:['1:1','16:9','9:16','4:3','3:4','3:2','2:3'], resolutions:['1k','2k'], quality:null, maxN:4, maxRefs:3, refs:true, note:'文生图与参考图编辑' },
+  { id:'wan2.7-image', prefer:'wan2.7-image-pro',       label:'Wan 2.7 Image',        sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3'], resolutions:['1k','2k'], quality:null, maxN:4, maxRefs:4, refs:true, note:'通义万相图像' },
+  { id:'dall-e', prefer:'dall-e-3',             label:'DALL·E',               sizes:['1:1','16:9','9:16'], resolutions:null, quality:['standard','hd'], maxN:1, maxRefs:0, refs:false, note:'DALL·E 2 / 3' },
+  { id:'midjourney', prefer:'midjourney',         label:'Midjourney',           sizes:['1:1','16:9','9:16','3:2','2:3'], resolutions:null, quality:null, maxN:4, maxRefs:4, refs:true, note:'独立路由 /v1/midjourney' },
+];
+
+const FAMILY_ALIASES = [
+  [/^gpt-image-2\.5/, 'gpt-image-2.5'],
+  [/^gpt-image-2/, 'gpt-image-2'],
+  [/^gpt-image-1/, 'gpt-image-1'],
+  [/^seedream-5/, 'seedream-5'],
+  [/^seedream-4/, 'seedream-4'],
+  [/^flux-2/, 'flux-2'],
+  [/^flux-kontext/, 'flux-kontext'],
+  [/^gemini-3\.1-flash-image-preview-official|^gemini-3\.1-flash-image-preview$/, 'nano-banana-2'],
+  [/^gemini-3\.1-flash-lite-image/, 'nano-banana-2'],
+  [/^gemini-3-pro-image-preview/, 'nano-banana-pro'],
+  [/^gemini-2\.5-flash-image-preview/, 'nano-banana'],
+  [/^imagen-4/, 'imagen-4.0'],
+  [/^qwen-image-3/, 'qwen-image-3'],
+  [/^qwen-image-2/, 'qwen-image-2'],
+  [/^z-image/, 'z-image-turbo'],
+  [/^grok-imagine-image|^grok-imagine-2/, 'grok-imagine-2'],
+  [/^grok-imagine/, 'grok-imagine'],
+  [/^wan2\.7-image/, 'wan2.7-image'],
+  [/^dall-e/, 'dall-e'],
+  [/^midjourney/, 'midjourney'],
+  [/^chatgpt-image/, 'gpt-image-1'],
+  [/^ltx-2\.3-text-image/, 'flux-2'],
+];
+
+function familyOf(id) {
+  for (const [re, fam] of FAMILY_ALIASES) if (re.test(id)) return fam;
+  return null;
+}
+
+/* ------------------------------- 价格（USD，来自官网价格接口） ---------------- */
+
+const SIZE_PX = {"gpt-image-2":{"1k":{"1:1":"1024x1024","3:2":"1536x1024","2:3":"1024x1536","4:3":"1024x768","3:4":"768x1024","5:4":"1280x1024","4:5":"1024x1280","16:9":"1536x864","9:16":"864x1536","2:1":"2048x1024","1:2":"1024x2048","3:1":"1881x836","1:3":"887x1774","21:9":"2016x864","9:21":"864x2016"},"2k":{"1:1":"2048x2048","3:2":"2048x1360","2:3":"1360x2048","4:3":"2048x1536","3:4":"1536x2048","5:4":"2560x2048","4:5":"2048x2560","16:9":"2048x1152","9:16":"1152x2048","2:1":"2688x1344","1:2":"1344x2688","3:1":"3072x1024","1:3":"1024x3072","21:9":"2688x1152","9:21":"1152x2688"},"4k":{"1:1":"2880x2880","3:2":"3520x2336","2:3":"2336x3520","4:3":"3312x2480","3:4":"2480x3312","5:4":"3216x2576","4:5":"2576x3216","16:9":"3840x2160","9:16":"2160x3840","2:1":"3840x1920","1:2":"1920x3840","3:1":"3840x1280","1:3":"1280x3840","21:9":"3840x1648","9:21":"1648x3840"}},"gpt-image-2.5":{"1k":{"1:1":"1024x1024","3:2":"1536x1024","2:3":"1024x1536","4:3":"1024x768","3:4":"768x1024","5:4":"1280x1024","4:5":"1024x1280","16:9":"1536x864","9:16":"864x1536","2:1":"2048x1024","1:2":"1024x2048","21:9":"2016x864","9:21":"864x2016","3:1":"1536x512","1:3":"512x1536"},"2k":{"1:1":"2048x2048","3:2":"2048x1360","2:3":"1360x2048","4:3":"2048x1536","3:4":"1536x2048","5:4":"2560x2048","4:5":"2048x2560","16:9":"2048x1152","9:16":"1152x2048","2:1":"2688x1344","1:2":"1344x2688","21:9":"2688x1152","9:21":"1152x2688","3:1":"3072x1024","1:3":"1024x3072"},"4k":{"1:1":"2880x2880","3:2":"3520x2336","2:3":"2336x3520","4:3":"3312x2480","3:4":"2480x3312","5:4":"3216x2576","4:5":"2576x3216","16:9":"3840x2160","9:16":"2160x3840","2:1":"3840x1920","1:2":"1920x3840","21:9":"3840x1648","9:21":"1648x3840","3:1":"3840x1280","1:3":"1280x3840"}},"gpt-image-1":{"default":{"1:1":"1024x1024","2:3":"1024x1536","3:2":"1536x1024"}},"flux-2":{"1mp":{"1:1":"1024x1024","4:3":"1152x864","3:4":"864x1152","16:9":"1344x752","9:16":"752x1344","3:2":"1248x832","2:3":"832x1248","21:9":"1504x640","9:21":"640x1504"},"2mp":{"1:1":"1440x1440","4:3":"1664x1248","3:4":"1248x1664","16:9":"1920x1072","9:16":"1072x1920","3:2":"1728x1152","2:3":"1152x1728","21:9":"2176x928","9:21":"928x2176"},"3mp":{"1:1":"1536x1536","4:3":"1824x1360","3:4":"1360x1824","16:9":"2048x1152","9:16":"1152x2048","3:2":"1872x1248","2:3":"1248x1872","21:9":"2304x992","9:21":"992x2304"},"4mp":{"1:1":"2048x2048","4:3":"2336x1760","3:4":"1760x2336","16:9":"2720x1536","9:16":"1536x2720","3:2":"2496x1664","2:3":"1664x2496","21:9":"3072x1312","9:21":"1312x3072"}},"flux-kontext":{"default":{"1:1":"1024x1024","4:3":"1184x880","3:4":"880x1184","16:9":"1392x752","9:16":"752x1392","3:2":"1248x832","2:3":"832x1248","21:9":"1568x672","9:21":"672x1568"}},"qwen-image-2":{"1k":{"1:1":"1024x1024","4:3":"1152x864","3:4":"864x1152","16:9":"1280x720","9:16":"720x1280","3:2":"1248x832","2:3":"832x1248"},"2k":{"1:1":"2048x2048","4:3":"2048x1536","3:4":"1536x2048","16:9":"2048x1152","9:16":"1152x2048","3:2":"2048x1360","2:3":"1360x2048"}},"qwen-image-3":{"1k":{"1:1":"1024x1024","4:3":"1152x864","3:4":"864x1152","16:9":"1280x720","9:16":"720x1280","3:2":"1248x832","2:3":"832x1248"},"2k":{"1:1":"2048x2048","4:3":"2048x1536","3:4":"1536x2048","16:9":"2048x1152","9:16":"1152x2048","3:2":"2048x1360","2:3":"1360x2048"}},"seedream-4":{"2k":{"1:1":"2048x2048","4:3":"2304x1728","3:4":"1728x2304","16:9":"2560x1440","9:16":"1440x2560","3:2":"2496x1664","2:3":"1664x2496","2:1":"2880x1440","1:2":"1440x2880","21:9":"3024x1296","9:21":"1296x3024"},"4k":{"1:1":"4096x4096","4:3":"4694x3520","3:4":"3520x4694","16:9":"5404x3040","9:16":"3040x5404","3:2":"4992x3328","2:3":"3328x4992","2:1":"5760x2880","1:2":"2880x5760","21:9":"6198x2656","9:21":"2656x6198"}},"seedream-5":{"1k":{"1:1":"1024x1024","4:3":"1152x864","3:4":"864x1152","16:9":"1312x736","9:16":"736x1312","3:2":"1248x832","2:3":"832x1248","2:1":"1440x720","1:2":"720x1440","21:9":"1568x672"},"1.5k":{"1:1":"1536x1536","4:3":"1792x1344","3:4":"1344x1792","16:9":"2048x1152","9:16":"1152x2048","3:2":"1872x1248","2:3":"1248x1872","2:1":"2176x1088","1:2":"1088x2176","21:9":"2352x1008"},"2k":{"1:1":"2048x2048","4:3":"2304x1728","3:4":"1728x2304","16:9":"2560x1440","9:16":"1440x2560","3:2":"2496x1664","2:3":"1664x2496","2:1":"2880x1440","1:2":"1440x2880","21:9":"3024x1296"}},"grok-imagine-2":{"compatpixels":{"1:1":"1024x1024","2:3":"1024x1792","3:2":"1792x1024","9:16":"720x1280","16:9":"1280x720"}}};
+
+/* 逐模型特例（依据官方文档）：覆盖家族默认配置 */
+const MODEL_OVERRIDES = {
+  'imagen-4.0-apimart':      { refs:false, maxRefs:0, resolutions:null, maxN:1 },
+  'grok-imagine-2.0-ext':    { refs:false, maxRefs:0, maxN:12 },
+  'grok-imagine-image-2.0':  { resolutions:['1k','2k'], maxN:10 },
+  'grok-imagine-image':      { resolutions:['1k','2k'], maxN:4 },
+  'seedream-4-5':            { resolutions:['2k','4k'] },
+  'seedream-5-0-lite':       { resolutions:['2k','3k','4k'] },
+  'seedream-5-0-pro':        { maxN:1 },
+  'gemini-3-pro-image-preview':          { maxN:1 },
+  'gemini-3-pro-image-preview-official': { maxN:1 },
+  'gemini-3.1-flash-image-preview':          { maxN:1 },
+  'gemini-3.1-flash-image-preview-official': { maxN:1 },
+  'gemini-3.1-flash-lite-image':      { resolutions:['1k'], maxN:1 },
+  'gemini-3.1-flash-lite-image-ext':  { resolutions:['1k'], maxN:1 },
+  'gemini-2.5-flash-image-preview':          { resolutions:['1k'], maxN:1 },
+  'gemini-2.5-flash-image-preview-official': { resolutions:['1k'], maxN:1 },
+  'flux-kontext-pro': { resolutions:null }, 'flux-kontext-max': { resolutions:null },
+};
+
+const PRICES = {"dall-e-2":{"base":0.02,"res":null},"dall-e-3":{"base":0.04,"res":null},"seedream-4-0":{"base":0.024375,"res":null},"seedream-4-5":{"base":0.0325,"res":null},"seedream-5-0-lite":{"base":0.035,"res":null},"seedream-5-0-pro":{"base":0.045,"res":{"1K":0.0365625,"2K":0.073125,"1.5K":0.0365625}},"flux-2-flex":{"base":null,"res":{"4MP":0.2,"1MP":0.05,"2MP":0.1,"3MP":0.15}},"flux-2-max":{"base":0.1,"res":{"1MP":0.07,"2MP":0.1,"3MP":0.13,"4MP":0.16}},"flux-2-pro":{"base":null,"res":{"2MP":0.045,"3MP":0.06,"4MP":0.075,"1MP":0.03}},"flux-kontext-max":{"base":0.08,"res":null},"flux-kontext-pro":{"base":0.04,"res":null},"gemini-2.5-flash-image-preview":{"base":0.015625,"res":null},"gemini-2.5-flash-image-preview-official":{"base":0.039,"res":null},"gemini-3-pro-image-preview":{"base":0.0375,"res":{"4K":0.05}},"gemini-3-pro-image-preview-official":{"base":0.134,"res":{"4K":0.24}},"gemini-3.1-flash-image-preview":{"base":0.01875,"res":{"0.5K":0.01875,"1K":0.01875,"2K":0.025,"4K":0.03125}},"gemini-3.1-flash-image-preview-official":{"base":0.067,"res":{"0.5K":0.067,"1K":0.067,"2K":0.101,"4K":0.151}},"gemini-3.1-flash-lite-image":{"base":0.04,"res":null},"gemini-3.1-flash-lite-image-ext":{"base":0.015625,"res":null},"gpt-image-1-official":{"base":0.1336,"res":{"1:1":0.1336,"2:3":0.2,"3:2":0.2}},"gpt-image-1.5-official":{"base":0.1064,"res":{"2:3":0.16,"3:2":0.16,"1:1":0.1064}},"gpt-image-2":{"base":0.010625,"res":{"1K":0.010625,"2K":0.0175,"4K":0.02625}},"gpt-image-2-official":{"base":0.2109,"res":{"9:21@2K":0.0045,"4:5":0.0054,"16:9@2K":0.0049,"1:1@4K":0.0199,"3:4@2K":0.0076,"9:21":0.0033,"3:1":0.0162,"1:2":0.0041,"21:9@2K":0.0045,"3:2@4K":0.0136,"3:2@2K":0.0065,"4:3@4K":0.0149,"2:1":0.0041,"1:2@2K":0.0056,"1:3":0.0018,"2:1@2K":0.0056,"9:21@4K":0.0072,"2:3@2K":0.0065,"3:2":0.0049,"4:5@2K":0.0115,"1:3@2K":0.0032,"21:9":0.0033,"1:3@4K":0.0043,"9:16@2K":0.0049,"16:9":0.0038,"4:3@2K":0.0076,"5:4@2K":0.0115,"3:1@2K":0.0032,"4:3":0.0042,"3:4":0.0042,"16:9@4K":0.0113,"9:16":0.0038,"1:2@4K":0.0092,"2:3":0.0049,"5:4":0.0054,"2:1@4K":0.0092,"9:16@4K":0.0113,"3:1@4K":0.0043,"3:4@4K":0.0149,"1:1@2K":0.0121,"21:9@4K":0.0072,"5:4@4K":0.0162,"4:5@4K":0.0162,"2:3@4K":0.0136,"1:1":0.0061}},"gpt-image-2.5-ext":{"base":0.010625,"res":null},"gpt-image-2.5-flare":{"base":null,"res":{"5:4":0.18357,"2:1":0.1416,"21:9":0.11046,"5:4@4K":0.57018,"3:4@4K":0.5295,"16:9@4K":0.40026,"4:5@2K":0.40155,"1:2":0.1416,"3:2@4K":0.47109,"3:2@2K":0.22053,"9:16@2K":0.1695,"3:1@2K":0.11856,"3:4":0.14445,"21:9@4K":0.24588,"9:21":0.11046,"2:3@2K":0.22053,"3:1":0.0642,"9:21@2K":0.15048,"1:1@4K":0.71157,"9:21@4K":0.24588,"2:1@2K":0.19398,"3:4@2K":0.26676,"2:3@4K":0.47109,"4:5@4K":0.57018,"1:3@4K":0.15933,"5:4@2K":0.40155,"1:1":0.21072,"4:3@2K":0.26676,"1:2@4K":0.32394,"4:3@4K":0.5295,"1:3":0.0642,"4:5":0.18357,"1:1@2K":0.42816,"2:3":0.16464,"21:9@2K":0.15048,"9:16@4K":0.40026,"9:16":0.12936,"4:3":0.14445,"16:9@2K":0.1695,"16:9":0.12936,"3:1@4K":0.15933,"3:2":0.16464,"1:3@2K":0.11856,"1:2@2K":0.19398,"2:1@4K":0.32394}},"gpt-image-2.5-sunburst":{"base":null,"res":{"5:4":0.18357,"1:1":0.21072,"4:5":0.18357,"1:3":0.0642,"4:5@2K":0.40155,"16:9@4K":0.40026,"21:9":0.11046,"5:4@2K":0.40155,"1:1@2K":0.42816,"4:5@4K":0.57018,"3:1":0.0642,"3:4@2K":0.26676,"4:3":0.14445,"9:16@2K":0.1695,"3:1@4K":0.15933,"4:3@4K":0.5295,"9:16":0.12936,"16:9":0.12936,"3:1@2K":0.11856,"9:21":0.11046,"1:2@2K":0.19398,"2:3@4K":0.47109,"3:4@4K":0.5295,"1:3@4K":0.15933,"9:16@4K":0.40026,"1:2@4K":0.32394,"2:1@2K":0.19398,"3:4":0.14445,"2:1@4K":0.32394,"9:21@4K":0.24588,"21:9@2K":0.15048,"3:2@4K":0.47109,"3:2":0.16464,"1:3@2K":0.11856,"5:4@4K":0.57018,"21:9@4K":0.24588,"1:1@4K":0.71157,"1:2":0.1416,"3:2@2K":0.22053,"16:9@2K":0.1695,"2:3@2K":0.22053,"9:21@2K":0.15048,"2:3":0.16464,"2:1":0.1416,"4:3@2K":0.26676}},"grok-imagine-1.0-apimart":{"base":0.01875,"res":null},"grok-imagine-1.0-edit-apimart":{"base":0.01875,"res":null},"grok-imagine-1.5-apimart":{"base":0.01875,"res":null},"grok-imagine-1.5-edit-apimart":{"base":0.01875,"res":null},"grok-imagine-2.0-ext":{"base":0.01875,"res":null},"grok-imagine-image":{"base":0.02,"res":{"1K":0.02,"2K":0.02}},"grok-imagine-image-2.0":{"base":0.06,"res":{"1K":0.06,"2K":0.08}},"grok-imagine-image-quality":{"base":0.05,"res":{"1K":0.05,"2K":0.07}},"imagen-4.0-apimart":{"base":0.05,"res":null},"midjourney":{"base":0.0563,"res":null},"qwen-image-2.0":{"base":0.025,"res":null},"qwen-image-2.0-pro":{"base":0.0625,"res":null},"qwen-image-3.0":{"base":0.025714,"res":{"1K":0.025714,"2K":0.025714}},"qwen-image-3.0-pro":{"base":0.035714,"res":{"1K":0.035714,"2K":0.071429}},"wan2.5-preview":{"base":null,"res":{"480P":0.042,"720P":0.083,"1080P":0.137}},"wan2.6":{"base":0.0625,"res":{"1080P":0.105}},"wan2.7":{"base":0.083,"res":{"1080P":0.137}},"wan2.7-image":{"base":0.027,"res":null},"wan2.7-image-pro":{"base":0.068,"res":null},"z-image-turbo":{"base":0.0125,"res":null},"chatgpt-image-latest":{"base":0.04,"res":null},"gpt-image-1":{"base":0.04,"res":null},"gpt-image-1-mini":{"base":0.02,"res":null},"gpt-image-1.5":{"base":0.05,"res":null},"ltx-2.3-text-image":{"base":0.03,"res":null}};   // 来自官网价格接口，单位 USD；credits = USD × 8
+const PRICE_FILE_META = { source: 'https://api.aishuch.com/api/pricing/model', rate: CREDIT_RATE };
+
+function priceOf(modelId, res) {
+  const p = PRICES[modelId];
+  if (!p) return null;
+  if (res && p.res && p.res[String(res).toUpperCase()] != null) return p.res[String(res).toUpperCase()];
+  if (p.res) { const v = Object.values(p.res)[0]; if (v != null) return v; }
+  return p.base == null ? null : p.base;
+}
+function priceTag(modelId) {
+  const p = PRICES[modelId];
+  if (!p) return '';
+  if (p.res) {
+    const items = Object.entries(p.res).map(([k,v]) => k + ' ' + credText(v));
+    return items.join(' / ');
+  }
+  return p.base == null ? '' : credText(p.base);
+}
+
+/* --------------------------------- API 客户端 -------------------------------- */
+
+async function api(path, { method='GET', body=null, key=null, base=null } = {}) {
+  const res = await fetch((base||state.base) + path, {
+    method,
+    headers: { 'Authorization': 'Bearer ' + (key||state.key), ...(body?{'Content-Type':'application/json'}:{}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let json; try { json = JSON.parse(text); } catch(_) { json = { raw: text }; }
+  return { status: res.status, ok: res.ok, json };
+}
+
+/** 密钥校验：拉一次模型列表（免费） */
+async function verifyKey(key) {
+  if (!key) return { ok:false, reason:'请填写 API Key' };
+  try {
+    const r = await api('/v1/models?expand=category', { key });
+    if (r.status === 200 && r.json && Array.isArray(r.json.data)) return { ok:true, models:r.json.data };
+    const msg = (r.json && r.json.error && r.json.error.message) || ('HTTP ' + r.status);
+    if (r.status === 401) return { ok:false, reason:'API Key 无效或已失效' };
+    return { ok:false, reason: msg };
+  } catch (err) {
+    return { ok:false, reason:'无法连接接口（' + err.message + '）', network:true };
+  }
+}
+
+/** 提交生成任务 */
+async function submitTask(payload) {
+  const r = await api('/v1/images/generations', { method:'POST', body:payload });
+  if (r.ok && r.json) {
+    const d = r.json.data;
+    const tid = Array.isArray(d) ? (d[0] && (d[0].task_id || d[0].id)) : (d && (d.task_id || d.id));
+    if (tid) return { taskId:tid, raw:r.json };
+  }
+  const msg = (r.json && r.json.error && r.json.error.message) || (r.json && r.json.message) || ('HTTP ' + r.status);
+  const err = new Error(msg); err.status = r.status; err.json = r.json;
+  throw err;
+}
+
+/** 查询任务 */
+async function queryTask(taskId) {
+  const r = await api('/v1/tasks/' + encodeURIComponent(taskId));
+  return r.json && (r.json.data || r.json);
+}
+
+/* ------------------------------ 历史记录（本机） ----------------------------- */
+
+function loadHistory(){ try{ state.history = JSON.parse(localStorage.getItem(LS_HIST)||'[]')||[]; }catch(_){ state.history=[]; } }
+function saveHistory(){
+  if (state.history.length > MAX_HISTORY) state.history.length = MAX_HISTORY;
+  try { localStorage.setItem(LS_HIST, JSON.stringify(state.history)); } catch(_){ toast('本机存储已满，建议清理历史','err'); }
+}
+function addRecord(rec){ state.history.unshift(rec); saveHistory(); return rec; }
+function updateRecord(id, patch){ const r=state.history.find(x=>x.id===id); if(r){ Object.assign(r,patch); saveHistory(); } return r; }
+
+/* IndexedDB 图片缓存 */
+const DB='apimartzs', STORE='img';
+let dbp=null;
+function db(){ if(!dbp) dbp=new Promise((res,rej)=>{ const q=indexedDB.open(DB,1);
+  q.onupgradeneeded=()=>{ const d=q.result; if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE); };
+  q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); return dbp; }
+async function idbPut(k,b){ const d=await db(); return new Promise((res,rej)=>{ const tx=d.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(b,k); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); }); }
+async function idbGet(k){ const d=await db(); return new Promise((res,rej)=>{ const tx=d.transaction(STORE,'readonly'); const r=tx.objectStore(STORE).get(k); r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); }); }
+async function idbDel(k){ const d=await db(); return new Promise((res)=>{ const tx=d.transaction(STORE,'readwrite'); tx.objectStore(STORE).delete(k); tx.oncomplete=res; tx.onerror=res; }); }
+async function idbClear(){ const d=await db(); return new Promise((res)=>{ const tx=d.transaction(STORE,'readwrite'); tx.objectStore(STORE).clear(); tx.oncomplete=res; tx.onerror=res; }); }
+
+async function imgSrc(rec, idx) {
+  const u = (rec.urls||[])[idx]; if (!u) return '';
+  const k = rec.id + ':' + u;
+  if (state.blobUrls.has(k)) return state.blobUrls.get(k);
+  if (rec.cached) {
+    try { const b = await idbGet(k); if (b) { const o=URL.createObjectURL(b); state.blobUrls.set(k,o); return o; } } catch(_){}
+  }
+  return u;
+}
+
+/* --------------------------------- 表单逻辑 -------------------------------- */
+
+function currentFamily(){ return FAMILIES.find(f=>f.id===$('#familySel').value) || FAMILIES[0]; }
+/** 家族默认配置 + 逐模型覆盖 */
+function effectiveCfg(fam, modelId){
+  const ov = MODEL_OVERRIDES[modelId] || {};
+  const cfg = { ...fam, ...ov };
+  if (ov.resolutions === null) cfg.resolutions = null;
+  if (ov.sizes) cfg.sizes = ov.sizes;
+  return cfg;
+}
+/** 当前档位下该比例的像素尺寸 */
+function pxOf(famId, res, ratio){
+  const t = SIZE_PX[famId]; if (!t || !ratio) return null;
+  const lv = (res||'1k').toLowerCase();
+  const l = t[lv] || t[Object.keys(t)[0]] || {};
+  return l[ratio] || null;
+}
+function currentModelId(){ return $('#modelSel').value; }
+
+function renderFamilySelect(){
+  $('#familySel').innerHTML = FAMILIES
+    .filter(f => state.models.some(m => familyOf(m.id) === f.id))
+    .map(f => `<option value="${esc(f.id)}">${esc(f.label)}</option>`).join('');
+}
+function renderModelSelect(keep){
+  const fam = currentFamily();
+  const list = state.models.filter(m => familyOf(m.id) === fam.id);
+  const official = state.official && list.some(m=>/-official$/.test(m.id));
+  let shown = list;
+  if (list.some(m=>/-official$/.test(m.id))) {
+    shown = state.official ? list.filter(m=>/-official$/.test(m.id)) : list.filter(m=>!/-official$/.test(m.id));
+    if (!shown.length) shown = list;
+  }
+  $('#modelSel').innerHTML = shown.map(m => {
+    const t = priceTag(m.id);
+    return `<option value="${esc(m.id)}">${esc(m.id)}${t?(' · '+esc(t)):''}</option>`;
+  }).join('');
+  if (keep && shown.some(m=>m.id===keep)) {
+    $('#modelSel').value = keep;
+  } else if (shown.length > 1) {
+    const pref = fam.prefer;
+    const pick = (pref && shown.find(m=>m.id===pref))
+      || shown.find(m=>/(^|-)pro$|-pro-|pro$/.test(m.id))
+      || shown.find(m=>/flare|sunburst|max|pro/.test(m.id))
+      || shown[0];
+    if (pick) $('#modelSel').value = pick.id;
+  }
+  $('#officialRow').hidden = !list.some(m=>/-official$/.test(m.id));
+  onModelChange();
+}
+
+function fill(sel, values, keep){
+  sel.innerHTML = values.map(v=>`<option value="${esc(v.v)}">${esc(v.t)}</option>`).join('');
+  if (keep!=null && values.some(x=>x.v===keep)) sel.value = keep;
+}
+
+function onModelChange(){
+  const fam = effectiveCfg(currentFamily(), currentModelId());
+  const id = currentModelId();
+  const m = state.byId.get(id);
+
+  // 分辨率
+  const hasRes = !!(fam.resolutions && fam.resolutions.length);
+  $('#resolutionField').querySelector('.row2').style.gridTemplateColumns = hasRes ? '1fr 1fr' : '1fr';
+  $('#resolutionSel').parentElement.hidden = !hasRes;
+  if (hasRes) {
+    const keepRes = $('#resolutionSel').value;   // 保留用户当前选择，避免被默认值覆盖
+    const wantRes = (keepRes && fam.resolutions.includes(keepRes)) ? keepRes : defaultResolution(fam, id);
+    fill($('#resolutionSel'), fam.resolutions.map(r=>({v:r,t:r.toUpperCase()+(priceOf(id,r)?(' · '+credText(priceOf(id,r))):'')})), wantRes);
+  } else {
+    $('#resolutionSel').innerHTML = '';
+    $('#resolutionWrap') && ($('#resolutionWrap').hidden = true);
+  }
+  // 宽高比
+  const curRes = hasRes ? $('#resolutionSel').value : (fam.resolutions ? fam.resolutions[0] : null);
+  const famId = currentFamily().id;
+  fill($('#sizeSel'), fam.sizes.map(s=>({ v:s, t: s==='auto' ? 'auto' : (pxOf(famId,curRes,s) ? (s+' · '+pxOf(famId,curRes,s).replace('x','×')) : s) })), fam.defaultSize || (fam.sizes.includes('16:9')?'16:9':fam.sizes[0]));
+  // 数量
+  const maxN = Math.max(1, Math.min(fam.maxN||4, 10));
+  fill($('#countSel'), Array.from({length:maxN},(_,i)=>({v:String(i+1),t:String(i+1)})), '1');
+  // 质量
+  const qw = $('#qualityWrap');
+  if (fam.quality && fam.quality.length) {
+    qw.hidden = false;
+    fill($('#qualitySel'), fam.quality.map(q=>({v:q,t:q})), fam.quality.includes('high')?'high':fam.quality[0]);
+  } else qw.hidden = true;
+
+  // 参考图
+  const refsOn = !!fam.refs;
+  $('#dropZone').style.display = refsOn ? '' : 'none';
+  $('#refHint').textContent = refsOn ? `最多 ${fam.maxRefs||4} 张` : '该模型不支持参考图';
+  if (!refsOn) { state.refs = []; renderRefs(); }
+
+  $('#modelHint').textContent = (m && (m.capability_tags||[]).join(' · ')) + (fam.note?(' ｜ '+fam.note):'');
+  updateCost();
+}
+
+function defaultResolution(fam, id){
+  if (!fam.resolutions) return null;
+  // 默认 1k（用户要求：image-2 / 1k / 16:9）
+  return fam.resolutions.includes('1k') ? '1k' : fam.resolutions[0];
+}
+
+function updateCost(){
+  const id = currentModelId();
+  const res = ($('#resolutionSel').value||'').toUpperCase();
+  const unit = priceOf(id, res);
+  const n = Number($('#countSel').value||1);
+  const total = unit==null ? null : unit*n;
+  $('#costLine').innerHTML = total==null
+    ? '<span class="hint">价格未知（以官网为准）</span>'
+    : `${n} 张 · ${credText(unit)}/张 ＝ <b>${credText(total)}</b> <span class="hint">(${money(total)})</span>`;
+  const btn = $('#runBtn');
+  btn.textContent = 'RUN';
+}
+
+/* --------------------------------- 参考图 -------------------------------- */
+
+function renderRefs(){
+  $('#refList').innerHTML = state.refs.map((src,i)=>
+    `<div class="ref"><img src="${esc(src)}" alt="ref"><button data-i="${i}">✕</button></div>`).join('');
+  $('#refList').onclick = (e)=>{ const b=e.target.closest('button'); if(!b) return; state.refs.splice(+b.dataset.i,1); renderRefs(); };
+}
+function fileToDataUrl(file, maxSide=2048){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onerror=()=>rej(new Error('读取失败'));
+    fr.onload=()=>{
+      const d=String(fr.result);
+      if (d.length < 800*1024) return res(d);
+      const im=new Image();
+      im.onload=()=>{
+        const sc=Math.min(1,maxSide/Math.max(im.width,im.height));
+        const w=Math.max(1,Math.round(im.width*sc)), h=Math.max(1,Math.round(im.height*sc));
+        const c=document.createElement('canvas'); c.width=w; c.height=h;
+        c.getContext('2d').drawImage(im,0,0,w,h);
+        res(c.toDataURL(/png/i.test(file.type)?'image/png':'image/jpeg',0.9));
+      };
+      im.onerror=()=>res(d); im.src=d;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+async function addFiles(files){
+  const fam=effectiveCfg(currentFamily(), currentModelId());
+  for (const f of Array.from(files)) {
+    if (!/^image\//.test(f.type)) { toast('已跳过非图片：'+f.name,'err'); continue; }
+    if (f.size > 12*1024*1024) { toast('图片过大（>12MB）：'+f.name,'err'); continue; }
+    if (state.refs.length >= (fam.maxRefs||4)) { toast(`参考图最多 ${fam.maxRefs||4} 张`,'err'); break; }
+    try { state.refs.push(await fileToDataUrl(f)); } catch(_){ toast('读取失败：'+f.name,'err'); }
+  }
+  renderRefs();
+}
+
+/* --------------------------------- 生成 -------------------------------- */
+
+function buildPayload(){
+  const fam = effectiveCfg(currentFamily(), currentModelId()), id = currentModelId(), prompt = $('#promptInput').value.trim();
+  const p = { model:id, prompt, n:Number($('#countSel').value||1) };
+  const res = $('#resolutionSel').value;
+  if (fam.resolutions && fam.resolutions.length && res) p.resolution = res;
+  const size = $('#sizeSel').value;
+  if (size) {
+    if (/^grok-imagine-2/.test(id)) p.aspect_ratio = size; else p.size = size;
+  }
+  if (fam.quality && fam.quality.length) p.quality = $('#qualitySel').value;
+  if (state.refs.length && fam.refs) p.image_urls = state.refs.slice(0, fam.maxRefs||4);
+  if ($('#moderationChk').checked) p.moderation = true;
+  return p;
+}
+
+async function run(){
+  const prompt = $('#promptInput').value.trim();
+  if (!prompt) { toast('请先填写提示词','err'); $('#promptInput').focus(); return; }
+  const payload = buildPayload();
+  const id = payload.model, fam = effectiveCfg(currentFamily(), payload.model);
+  const btn = $('#runBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+
+  const rec = addRecord({
+    id: 'task_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    model: id, family: fam.id, label: fam.label,
+    prompt, params: { ...payload, image_urls: undefined, prompt: undefined },
+    refCount: state.refs.length, status: 'running', progress: 0,
+    ts: Date.now(), startedAt: Date.now(), urls: [], error: null, cost: null, credits: null,
+  });
+  renderStage();
+
+  try {
+    const { taskId } = await submitTask(payload);
+    updateRecord(rec.id, { taskId });
+    pollTask(rec.id, taskId);
+  } catch (err) {
+    updateRecord(rec.id, { status:'failed', error: err.message, durationMs: Date.now()-rec.startedAt });
+    renderStage();
+    toast('提交失败：' + err.message, 'err');
+    btn.disabled = false; btn.textContent = 'RUN';
+  }
+}
+
+function pollTask(recId, taskId){
+  const started = Date.now();
+  const tick = async () => {
+    const rec = state.history.find(r=>r.id===recId);
+    if (!rec || rec.status !== 'running') return;
+    if (Date.now()-started > 10*60*1000) {
+      updateRecord(recId, { status:'failed', error:'超时（超过 10 分钟未完成）', durationMs: Date.now()-started });
+      renderStage(); return;
+    }
+    try {
+      const d = await queryTask(taskId);
+      const st = d.status;
+      if (st) updateRecord(recId, { progress: d.progress ?? rec.progress, upstream: st });
+      if (st === 'completed') {
+        const imgs = (d.result && d.result.images) || [];
+        const urls = imgs.map(x => Array.isArray(x.url) ? x.url[0] : x.url).filter(Boolean);
+        const cached = {};
+        for (const u of urls) {
+          try { const r = await fetch(u); if (r.ok) { await idbPut(recId+':'+u, await r.blob()); cached[u]=1; } } catch(_){}
+        }
+        updateRecord(recId, {
+          status:'succeeded', progress:100, urls, cached: Object.keys(cached).length>0,
+          cost: d.cost ?? null, credits: d.credits_cost ?? null,
+          durationMs: Date.now()-started, expiresAt: imgs[0] && imgs[0].expires_at || null,
+        });
+        renderStage(); toast('生成完成','ok');
+        return;
+      }
+      if (st === 'failed') {
+        const msg = (d.error && (d.error.message || d.error.code)) || '生成失败';
+        updateRecord(recId, { status:'failed', error: msg, durationMs: Date.now()-started });
+        renderStage(); toast('生成失败：'+msg,'err'); return;
+      }
+    } catch(err) { /* 网络抖动继续轮询 */ }
+    state.pollers.set(recId, setTimeout(tick, 3000));
+  };
+  state.pollers.set(recId, setTimeout(tick, 2500));
+  $('#runBtn').disabled = false; $('#runBtn').textContent = 'RUN';
+}
+
+/* --------------------------------- 渲染 -------------------------------- */
+
+function paramsChips(rec){
+  const p = rec.params || {}, out = [];
+  if (p.resolution) out.push('分辨率 ' + String(p.resolution).toUpperCase());
+  if (p.size) out.push('宽高比 ' + p.size);
+  if (p.aspect_ratio) out.push('宽高比 ' + p.aspect_ratio);
+  if (p.n) out.push('数量 ' + p.n);
+  if (p.quality) out.push('质量 ' + p.quality);
+  if (rec.refCount) out.push('参考图 ' + rec.refCount);
+  return out.map(t=>`<span class="chip">${esc(t)}</span>`).join('');
+}
+function statusBadge(rec){
+  const map = { running:['run','生成中'], succeeded:['ok','已完成'], failed:['err','失败'] };
+  const [cls,txt] = map[rec.status] || ['', rec.status];
+  return `<span class="badge ${cls}">${esc(txt)}</span>`;
+}
+
+function cardHtml(rec){
+  const running = rec.status === 'running';
+  const imgs = (rec.urls||[]).map((u,i)=>`
+    <div class="imgbox" data-idx="${i}">
+      <img data-idx="${i}" alt="result">
+      <div class="ops">
+        <button class="btn btn-sm" data-act="view" data-idx="${i}">查看</button>
+        <button class="btn btn-sm" data-act="download" data-idx="${i}">下载</button>
+      </div>
+    </div>`).join('');
+  return `
+  <div class="card" data-id="${esc(rec.id)}">
+    <div class="card-head">
+      ${statusBadge(rec)}
+      <span class="name">${esc(rec.model)}</span>
+      <span class="m">${esc(fmtTime(rec.ts))}${rec.durationMs?(' · '+esc(fmtDur(rec.durationMs))):''}${rec.credits?(' · '+esc(rec.credits)+' CREDITS'):''}</span>
+      <span class="acts">
+        <button class="btn btn-sm" data-act="reuse">复用参数</button>
+        <button class="btn btn-sm" data-act="copy">复制提示词</button>
+        <button class="btn btn-sm" data-act="del">删除</button>
+      </span>
+    </div>
+    ${running?`<div class="bar indet"><i></i></div>`:`<div class="bar"><i style="width:${rec.status==='succeeded'?100:0}%"></i></div>`}
+    <div class="card-body">
+      <div class="prompt clamp">${esc(rec.prompt)}</div>
+      <div class="chips">${paramsChips(rec)}</div>
+      ${rec.error?`<div class="err-box">${esc(rec.error)}</div>`:''}
+      ${rec.urls&&rec.urls.length?`<div class="imgs">${imgs}</div>`:(running?'<div class="imgs"><div class="skel"></div></div>':'')}
+      ${running?'<div class="hint" style="margin-top:8px">任务已提交，正在生成…（通常 20–60 秒）</div>':''}
+    </div>
+  </div>`;
+}
+
+function renderStage(){
+  const body = $('#stageBody');
+  if (state.view === 'models') return;      // 模型广场单独渲染
+  const list = state.view === 'history' ? state.history.slice() : state.history.slice(0, 20);
+  $('#stageTitle').textContent = state.view === 'history' ? '生成记录' : '生成结果';
+  $('#stageMeta').textContent = state.history.length ? `共 ${state.history.length} 条记录` : '';
+  if (!list.length) { body.innerHTML = '<div class="empty">暂无生成记录。</div>'; return; }
+  body.innerHTML = list.map(cardHtml).join('');
+  body.querySelectorAll('img[data-idx]').forEach(async (img)=>{
+    const card = img.closest('.card'); const rec = state.history.find(r=>r.id===card.dataset.id);
+    if (rec) img.src = await imgSrc(rec, +img.dataset.idx);
+  });
+  body.onclick = async (e)=>{
+    const card = e.target.closest('.card'); if (!card) return;
+    const rec = state.history.find(r=>r.id===card.dataset.id);
+    if (!rec) return;
+    const img = e.target.closest('img[data-idx]');
+    if (img) { openLb(rec, +img.dataset.idx); return; }
+    const btn = e.target.closest('[data-act]'); if (!btn) return;
+    const act = btn.dataset.act;
+    if (act==='copy') { navigator.clipboard.writeText(rec.prompt); toast('提示词已复制','ok'); }
+    else if (act==='reuse') reuse(rec);
+    else if (act==='view') openLb(rec, +btn.dataset.idx);
+    else if (act==='download') download(rec, +btn.dataset.idx);
+    else if (act==='del') {
+      if (!confirm('删除这条记录？（同时删除本机缓存图片）')) return;
+      for (const u of rec.urls||[]) await idbDel(rec.id+':'+u);
+      state.history = state.history.filter(r=>r.id!==rec.id); saveHistory(); renderStage();
+    }
+  };
+}
+
+function reuse(rec){
+  const fam = FAMILIES.find(f=>f.id===rec.family) || FAMILIES[0];
+  state.official = /-official$/.test(rec.model);
+  $('#familySel').value = fam.id;
+  renderModelSelect(rec.model);
+  $('#promptInput').value = rec.prompt || '';
+  const p = rec.params||{};
+  if (p.resolution) $('#resolutionSel').value = p.resolution;
+  if (p.size) $('#sizeSel').value = p.size;
+  if (p.aspect_ratio) $('#sizeSel').value = p.aspect_ratio;
+  if (p.n) $('#countSel').value = String(p.n);
+  if (p.quality) $('#qualitySel').value = p.quality;
+  updateCost();
+  toast('参数已回填','ok');
+}
+
+async function download(rec, idx){
+  const u = (rec.urls||[])[idx]; if (!u) return;
+  const name = slug(rec.prompt) + (idx?('-'+idx):'') + '.png';
+  try {
+    let blob = rec.cached ? await idbGet(rec.id+':'+u) : null;
+    if (!blob) { const r = await fetch(u); if (!r.ok) throw new Error('HTTP '+r.status); blob = await r.blob(); }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  } catch(_) { window.open(u, '_blank'); toast('已在新的标签页打开原图（可直接右键保存）'); }
+}
+
+async function openLb(rec, idx){
+  $('#lightbox').hidden = false;
+  $('#lbImg').src = await imgSrc(rec, idx);
+  $('#lbPrompt').textContent = rec.prompt || '';
+  $('#lbCopy').onclick = ()=>{ navigator.clipboard.writeText(rec.prompt||''); toast('提示词已复制','ok'); };
+  $('#lbDownload').onclick = ()=>download(rec, idx);
+}
+function closeLb(){ $('#lightbox').hidden = true; $('#lbImg').src=''; }
+
+/* --------------------------------- 模型广场 -------------------------------- */
+
+function renderModelsPage(){
+  const body = $('#stageBody');
+  $('#stageTitle').textContent = '模型广场';
+  $('#stageMeta').textContent = `${state.models.length} 个图像模型`;
+  body.innerHTML = `<div class="mlist">${state.models.map(m=>{
+    const fam = FAMILIES.find(f=>f.id===familyOf(m.id));
+    const tags = (m.capability_tags||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join('');
+    const pr = priceTag(m.id);
+    return `<div class="mcard">
+      <div class="top"><span class="id">${esc(m.id)}</span></div>
+      <div class="tags">${tags}${fam?`<span class="chip">${esc(fam.label)}</span>`:''}</div>
+      <div class="hint">${pr?('价格：'+esc(pr)):'价格见官网'}</div>
+      <div class="use"><button class="btn btn-sm" data-use="${esc(m.id)}">用这个模型</button></div>
+    </div>`;
+  }).join('')}</div>`;
+  body.onclick = (e)=>{
+    const b = e.target.closest('[data-use]'); if (!b) return;
+    const id = b.dataset.use;
+    const fam = FAMILIES.find(f=>f.id===familyOf(id));
+    if (fam) { $('#familySel').value = fam.id; renderModelSelect(id); }
+    switchView('image');
+    toast('已选择 '+id,'ok');
+  };
+}
+
+/* --------------------------------- 视图 -------------------------------- */
+
+function switchView(view){
+  state.view = view;
+  $('#formCol').hidden = (view === 'models');
+  $$('.side-nav button[data-cat]').forEach(b=>b.classList.toggle('active', b.dataset.cat===view && view!=='models'));
+  if (view === 'models') renderModelsPage(); else renderStage();
+}
+
+/* --------------------------------- 启动 -------------------------------- */
+
+function gateMsg(t, ok){ const el=$('#gateMsg'); el.textContent=t||''; el.className='msg'+(ok?' ok':''); }
+
+async function doVerify(key, silent){
+  if (!silent) gateMsg('正在校验密钥…', true);
+  const v = await verifyKey(key);
+  if (!v.ok) { if (!silent) gateMsg(v.reason); return false; }
+  state.key = key;
+  state.models = (v.models||[]).filter(m => m.category === 'image' || familyOf(m.id));
+  state.byId = new Map(state.models.map(m=>[m.id,m]));
+  if ($('#gateRemember').checked) localStorage.setItem(LS_KEY, key); else localStorage.removeItem(LS_KEY);
+  enterApp();
+  if (!silent) toast('验证成功','ok');
+  return true;
+}
+
+function enterApp(){
+  $('#gate').hidden = true;
+  $('#app').hidden = false;
+  renderFamilySelect();
+  // 默认：gpt-image-2 / 1k / 16:9
+  const fam = FAMILIES.find(f=>f.id==='gpt-image-2');
+  $('#familySel').value = 'gpt-image-2';
+  renderModelSelect('gpt-image-2');
+  $('#promptInput').value = 'cute things.';
+  renderStage();
+}
+
+function bind(){
+  $('#gateGo').onclick = ()=>doVerify($('#gateKey').value.trim());
+  $('#gateKey').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateGo').click(); });
+  $('#gateEye').onclick = ()=>{ const i=$('#gateKey'); i.type = i.type==='password'?'text':'password'; $('#gateEye').textContent = i.type==='password'?'显示':'隐藏'; };
+
+  $('#familySel').onchange = ()=>renderModelSelect();
+  $('#modelSel').onchange = onModelChange;
+  $('#resolutionSel').onchange = ()=>{ onModelChange(); updateCost(); };
+  ['#sizeSel','#countSel','#qualitySel'].forEach(s=>$(s).onchange = updateCost);
+  $('#officialSw').onclick = ()=>{
+    state.official = !state.official;
+    $('#officialSw').classList.toggle('on', state.official);
+    renderModelSelect(currentModelId());
+  };
+  $('#promptChips').innerHTML = ['cute things.','赛博朋克城市夜景，霓虹灯反射在湿润街道','极简产品摄影：白底香水瓶，柔和阴影','国潮插画海报，红金配色']
+    .map((p,i)=>`<span class="chip" style="cursor:pointer" data-p="${i}">${esc(p.slice(0,16))}</span>`).join('');
+  $('#promptChips').onclick = (e)=>{ const c=e.target.closest('[data-p]'); if(c) $('#promptInput').value = $('#promptChips').querySelectorAll('[data-p]')[+c.dataset.p].textContent; };
+
+  $('#dropZone').onclick = ()=>$('#fileInput').click();
+  $('#fileInput').onchange = e=>{ addFiles(e.target.files); e.target.value=''; };
+  ['dragenter','dragover'].forEach(ev=>$('#dropZone').addEventListener(ev,e=>{e.preventDefault();$('#dropZone').classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>$('#dropZone').addEventListener(ev,e=>{e.preventDefault();$('#dropZone').classList.remove('over');}));
+  $('#dropZone').addEventListener('drop', e=>{ if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+
+  $('#runBtn').onclick = run;
+  $('#resetBtn').onclick = ()=>{ $('#promptInput').value=''; state.refs=[]; renderRefs(); onModelChange(); };
+  $('#btnModels').onclick = ()=>switchView('models');
+  $('#btnHistory').onclick = ()=>switchView('history');
+  $$('.side-nav button[data-cat]').forEach(b=>b.onclick = ()=>{
+    const c = b.dataset.cat;
+    if (c !== 'image') { toast('该分类暂未接入（当前仅集成图像系列）'); return; }
+    switchView('image');
+  });
+  $('#btnConsole').onclick = ()=>{ window.open('https://apimart.ai', '_blank'); };
+  $('#btnPlayground').onclick = ()=>switchView('image');
+  $('#lbClose').onclick = closeLb;
+  $('#lightbox').onclick = e=>{ if(e.target.id==='lightbox') closeLb(); };
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLb(); });
+}
+
+(function boot(){
+  bind();
+  loadHistory();
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) { $('#gateKey').value = saved; doVerify(saved, true).then(ok=>{ if(!ok) gateMsg('已保存的密钥校验失败，请重新输入'); }); }
+})();
+</script>
+</body>
+</html>
