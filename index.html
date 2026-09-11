@@ -184,7 +184,7 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
       <li>校验方式是拉取一次模型列表（免费，不消耗额度）</li>
       <li>密钥只存在你自己的浏览器，不会上传到任何服务器</li>
       <li>纯前端页面：浏览器直连 <span style="font-family:monospace">api.aishuch.com</span>（APIMart 接口）</li>
-      <li>生成记录与图片存在本机，断网也能翻看历史</li>
+      <li>生成记录存在本机浏览器；图片链接由服务商提供，有效期 24–72 小时</li>
     </ul>
   </div>
 </div>
@@ -726,8 +726,9 @@ function pollTask(recId, taskId){
         const imgs = (d.result && d.result.images) || [];
         const urls = imgs.map(x => Array.isArray(x.url) ? x.url[0] : x.url).filter(Boolean);
         const cached = {};
+        // 图床多数不支持跨域：仅在允许时才缓存到 IndexedDB（失败静默，不影响显示）
         for (const u of urls) {
-          try { const r = await fetch(u); if (r.ok) { await idbPut(recId+':'+u, await r.blob()); cached[u]=1; } } catch(_){}
+          try { const r = await fetch(u, { mode:'cors' }); if (r.ok) { await idbPut(recId+':'+u, await r.blob()); cached[u]=1; } } catch(_){}
         }
         updateRecord(recId, {
           status:'succeeded', progress:100, urls, cached: Object.keys(cached).length>0,
@@ -796,6 +797,7 @@ function cardHtml(rec){
       ${rec.error?`<div class="err-box">${esc(rec.error)}</div>`:''}
       ${rec.urls&&rec.urls.length?`<div class="imgs">${imgs}</div>`:(running?'<div class="imgs"><div class="skel"></div></div>':'')}
       ${running?'<div class="hint" style="margin-top:8px">任务已提交，正在生成…（通常 20–60 秒）</div>':''}
+      ${rec.urls&&rec.urls.length?`<div class="hint" style="margin-top:8px">${rec.expiresAt?('图片链接有效期至 '+esc(fmtTime(rec.expiresAt*1000))+'，'):''}图床不支持跨域，请用「下载」按钮保存到本地</div>`:''}
     </div>
   </div>`;
 }
@@ -805,7 +807,7 @@ function renderStage(){
   if (state.view === 'models') return;      // 模型广场单独渲染
   const list = state.view === 'history' ? state.history.slice() : state.history.slice(0, 20);
   $('#stageTitle').textContent = state.view === 'history' ? '生成记录' : '生成结果';
-  $('#stageMeta').textContent = state.history.length ? `共 ${state.history.length} 条记录` : '';
+  $('#stageMeta').textContent = state.history.length ? `共 ${state.history.length} 条记录 · 图片链接由服务商限时提供，请及时下载` : '';
   if (!list.length) { body.innerHTML = '<div class="empty">暂无生成记录。</div>'; return; }
   body.innerHTML = list.map(cardHtml).join('');
   body.querySelectorAll('img[data-idx]').forEach(async (img)=>{
@@ -851,13 +853,18 @@ function reuse(rec){
 async function download(rec, idx){
   const u = (rec.urls||[])[idx]; if (!u) return;
   const name = slug(rec.prompt) + (idx?('-'+idx):'') + '.png';
+  // 图床（getapib.org / CloudFront）不返回 CORS 头，前端无法直接抓二进制；
+  // 若已缓存到 IndexedDB 则直接下载，否则在新标签页打开由浏览器保存。
   try {
-    let blob = rec.cached ? await idbGet(rec.id+':'+u) : null;
-    if (!blob) { const r = await fetch(u); if (!r.ok) throw new Error('HTTP '+r.status); blob = await r.blob(); }
+    const blob = rec.cached ? await idbGet(rec.id+':'+u) : null;
+    if (!blob) throw new Error('no-cache');
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
-  } catch(_) { window.open(u, '_blank'); toast('已在新的标签页打开原图（可直接右键保存）'); }
+  } catch(_) {
+    window.open(u, '_blank');
+    toast('已在新标签页打开原图：右键「图片另存为」即可保存');
+  }
 }
 
 async function openLb(rec, idx){
