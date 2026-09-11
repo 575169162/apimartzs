@@ -50,8 +50,8 @@
 
 - **配色**：大面积灰（页面 `#d4d4d4`、侧栏 `#c2c2c2`、面板 `#dedede`）+ 小面积白（输入框、主按钮、激活项、徽章、图片框），像素点阵底纹
 - **像素风**：全部零圆角、2–3px 粗描边、无模糊的硬阴影（`3px 3px 0`）、阶梯式进度条与开关、方块复选框
-- **字体**：内嵌 [Silkscreen](https://fonts.google.com/specimen/Silkscreen)（SIL Open Font License 1.1）用于拉丁字母与数字；中文使用系统字体，保证可读性。字体以 base64 内嵌，**不依赖任何外部 CDN**
+- **字体**：黑体（`Heiti SC` → `PingFang SC` → `Microsoft YaHei` → `Noto Sans CJK SC` 回退链），全部使用系统字体，**不加载任何外部字体或 CDN**
 
 ## 📄 License
 
-MIT（内嵌字体 Silkscreen 遵循 SIL Open Font License 1.1）
+MIT
