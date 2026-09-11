@@ -72,8 +72,6 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
 .sidebar{width:112px;flex:0 0 112px;border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:12px}
 .logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;letter-spacing:.4px}
 .logo-mark{width:20px;height:20px;border-radius:50%;object-fit:cover;display:block;border:1px solid var(--line)}
-.side-btns{display:flex;flex-direction:column;gap:6px}
-.side-btns .btn{padding:6px 8px;font-size:12px;justify-content:center}
 .side-nav{display:flex;flex-direction:column;gap:2px;margin-top:8px}
 .side-nav button{display:flex;align-items:center;gap:7px;border:none;background:transparent;color:var(--muted);
   padding:7px 8px;border-radius:6px;cursor:pointer;text-align:left;font-size:12.5px;width:100%}
@@ -132,14 +130,6 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
 .skel{border-radius:8px;aspect-ratio:1/1;background:linear-gradient(100deg,#f3f4f6 30%,#fafafa 50%,#f3f4f6 70%);background-size:220% 100%;animation:sk 1.3s linear infinite}
 @keyframes sk{0%{background-position:120% 0}100%{background-position:-20% 0}}
 
-/* ---------------- 模型广场 ---------------- */
-.mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.mcard{border:1px solid var(--line);border-radius:10px;padding:12px}
-.mcard .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.mcard .id{font-weight:600;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.mcard .tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
-.mcard .use{margin-top:10px;display:flex;gap:6px}
-
 /* ---------------- 灯箱 / toast ---------------- */
 .lightbox{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.96);display:flex;align-items:center;justify-content:center;padding:28px}
 .lightbox img{max-width:100%;max-height:76vh;border:1px solid var(--line);border-radius:10px;background:#fff}
@@ -195,19 +185,11 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
   <!-- 左侧栏 -->
   <aside class="sidebar">
     <div class="logo"><img class="logo-mark" src="logo.jpg" alt="APIMARTZS" width="20" height="20">APIMARTZS</div>
-    <div class="side-btns">
-      <button class="btn btn-sm" id="btnConsole">控制台</button>
-      <button class="btn btn-sm btn-dark" id="btnPlayground">PLAYGROUND</button>
-    </div>
     <nav class="side-nav">
-      <button data-cat="text">文本</button>
       <button data-cat="image" class="active">图像</button>
-      <button data-cat="video">视频</button>
-      <button data-cat="audio">音频</button>
     </nav>
     <div class="side-bottom">
       <nav class="side-nav">
-        <button id="btnModels">模型广场</button>
         <button id="btnHistory">生成记录</button>
       </nav>
     </div>
@@ -805,7 +787,6 @@ function cardHtml(rec){
 
 function renderStage(){
   const body = $('#stageBody');
-  if (state.view === 'models') return;      // 模型广场单独渲染
   const list = state.view === 'history' ? state.history.slice() : state.history.slice(0, 20);
   $('#stageTitle').textContent = state.view === 'history' ? '生成记录' : '生成结果';
   $('#stageMeta').textContent = state.history.length ? `共 ${state.history.length} 条记录 · 图片链接由服务商限时提供，请及时下载` : '';
@@ -877,40 +858,13 @@ async function openLb(rec, idx){
 }
 function closeLb(){ $('#lightbox').hidden = true; $('#lbImg').src=''; }
 
-/* --------------------------------- 模型广场 -------------------------------- */
-
-function renderModelsPage(){
-  const body = $('#stageBody');
-  $('#stageTitle').textContent = '模型广场';
-  $('#stageMeta').textContent = `${state.models.length} 个图像模型`;
-  body.innerHTML = `<div class="mlist">${state.models.map(m=>{
-    const fam = FAMILIES.find(f=>f.id===familyOf(m.id));
-    const tags = (m.capability_tags||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join('');
-    const pr = priceTag(m.id);
-    return `<div class="mcard">
-      <div class="top"><span class="id">${esc(m.id)}</span></div>
-      <div class="tags">${tags}${fam?`<span class="chip">${esc(fam.label)}</span>`:''}</div>
-      <div class="hint">${pr?('价格：'+esc(pr)):'价格见官网'}</div>
-      <div class="use"><button class="btn btn-sm" data-use="${esc(m.id)}">用这个模型</button></div>
-    </div>`;
-  }).join('')}</div>`;
-  body.onclick = (e)=>{
-    const b = e.target.closest('[data-use]'); if (!b) return;
-    const id = b.dataset.use;
-    const fam = FAMILIES.find(f=>f.id===familyOf(id));
-    if (fam) { $('#familySel').value = fam.id; renderModelSelect(id); }
-    switchView('image');
-    toast('已选择 '+id,'ok');
-  };
-}
-
 /* --------------------------------- 视图 -------------------------------- */
 
 function switchView(view){
   state.view = view;
-  $('#formCol').hidden = (view === 'models');
-  $$('.side-nav button[data-cat]').forEach(b=>b.classList.toggle('active', b.dataset.cat===view && view!=='models'));
-  if (view === 'models') renderModelsPage(); else renderStage();
+  $('#formCol').hidden = false;
+  $$('.side-nav button[data-cat]').forEach(b=>b.classList.toggle('active', b.dataset.cat===view));
+  renderStage();
 }
 
 /* --------------------------------- 启动 -------------------------------- */
@@ -968,15 +922,8 @@ function bind(){
 
   $('#runBtn').onclick = run;
   $('#resetBtn').onclick = ()=>{ $('#promptInput').value=''; state.refs=[]; renderRefs(); onModelChange(); };
-  $('#btnModels').onclick = ()=>switchView('models');
   $('#btnHistory').onclick = ()=>switchView('history');
-  $$('.side-nav button[data-cat]').forEach(b=>b.onclick = ()=>{
-    const c = b.dataset.cat;
-    if (c !== 'image') { toast('该分类暂未接入（当前仅集成图像系列）'); return; }
-    switchView('image');
-  });
-  $('#btnConsole').onclick = ()=>{ window.open('https://apimart.ai', '_blank'); };
-  $('#btnPlayground').onclick = ()=>switchView('image');
+  $$('.side-nav button[data-cat]').forEach(b=>b.onclick = ()=>switchView('image'));
   $('#lbClose').onclick = closeLb;
   $('#lightbox').onclick = e=>{ if(e.target.id==='lightbox') closeLb(); };
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLb(); });

@@ -1,6 +1,6 @@
 # APIMARTZS · 图像 Playground
 
-纯前端 AI 生图工作台，界面参考 [APIMart Playground](https://aishuch.com/zh/playground?category=image)，**浏览器直连接口，不需要任何服务器**。
+纯前端 AI 生图工作台，**浏览器直连接口，不需要任何服务器**。
 
 > 在线地址：**https://575169162.github.io/apimartzs/**
 
@@ -16,7 +16,6 @@
 | 参考图 | 拖拽上传（自动压缩）或 URL，按模型上限限制张数；不支持图生图的模型会自动隐藏该区域 |
 | 异步任务 | 提交后拿 task_id 轮询进度，卡片显示进度条、耗时与实际扣费 credits |
 | 本地历史 | 生成记录（提示词/参数/扣费/耗时）存在本机 localStorage，随时可查、可复用参数 |
-| 模型广场 | 一键浏览全部图像模型、能力标签与价格，可直接「用这个模型」 |
 
 ## 🔌 接口
 
