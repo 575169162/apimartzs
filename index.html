@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APIMARTZS · 图像 Playground</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23111'/><text x='50' y='68' font-size='58' font-family='Arial' font-weight='bold' fill='%23fff' text-anchor='middle'>A</text></svg>">
+<link rel="icon" type="image/jpeg" href="logo.jpg">
+<link rel="apple-touch-icon" href="logo.jpg">
 <style>
 :root{
   --bg:#ffffff; --panel:#ffffff; --line:#e5e7eb; --line-soft:#f0f1f3;
@@ -56,7 +57,7 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
 /* ---------------- 登录门 ---------------- */
 .gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#fff;padding:24px}
 .gate-card{width:100%;max-width:420px;border:1px solid var(--line);border-radius:14px;padding:30px 28px 22px}
-.gate-logo{width:44px;height:44px;border-radius:11px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;margin:0 auto 14px}
+.gate-logo{width:56px;height:56px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 14px;border:1px solid var(--line);box-shadow:0 4px 14px rgba(17,24,39,.12)}
 .gate h1{margin:0 0 4px;font-size:19px;text-align:center}
 .gate .sub{text-align:center;color:var(--muted);font-size:12.5px;margin:0 0 22px}
 .gate .row{display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px}
@@ -70,7 +71,7 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
 .app{display:flex;height:100vh;overflow:hidden}
 .sidebar{width:112px;flex:0 0 112px;border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:12px}
 .logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;letter-spacing:.4px}
-.logo-mark{width:18px;height:18px;border-radius:5px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.logo-mark{width:20px;height:20px;border-radius:50%;object-fit:cover;display:block;border:1px solid var(--line)}
 .side-btns{display:flex;flex-direction:column;gap:6px}
 .side-btns .btn{padding:6px 8px;font-size:12px;justify-content:center}
 .side-nav{display:flex;flex-direction:column;gap:2px;margin-top:8px}
@@ -167,7 +168,7 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
 <!-- ==================== 密钥验证门 ==================== -->
 <div id="gate" class="gate">
   <div class="gate-card">
-    <div class="gate-logo">A</div>
+    <img class="gate-logo" src="logo.jpg" alt="APIMARTZS" width="56" height="56">
     <h1>APIMARTZS</h1>
     <p class="sub">图像 Playground · APIMart 接口</p>
     <label class="label" for="gateKey">API Key</label>
@@ -193,7 +194,7 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
 <div id="app" class="app" hidden>
   <!-- 左侧栏 -->
   <aside class="sidebar">
-    <div class="logo"><span class="logo-mark">A</span>APIMARTZS</div>
+    <div class="logo"><img class="logo-mark" src="logo.jpg" alt="APIMARTZS" width="20" height="20">APIMARTZS</div>
     <div class="side-btns">
       <button class="btn btn-sm" id="btnConsole">控制台</button>
       <button class="btn btn-sm btn-dark" id="btnPlayground">PLAYGROUND</button>
