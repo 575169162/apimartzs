@@ -363,11 +363,6 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
     <nav class="side-nav">
       <button data-cat="image" class="active">图像</button>
     </nav>
-    <div class="side-bottom">
-      <nav class="side-nav">
-        <button id="btnHistory">生成记录</button>
-      </nav>
-    </div>
   </aside>
 
   <!-- 中间表单 -->
@@ -380,6 +375,13 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.6}
       <label class="label" for="modelSel">模型 ID</label>
       <select id="modelSel" class="input"></select>
       <div class="hint" id="modelHint" style="margin-top:6px"></div>
+    </div>
+    <div class="field" id="versionField" hidden>
+      <label class="label" for="versionSel">版本</label>
+      <select id="versionSel" class="input">
+        <option value="flare">flare（Flare）</option>
+        <option value="sunburst">sunburst（Sunburst）</option>
+      </select>
     </div>
     <div class="field">
       <label class="label" for="promptInput">提示词</label>
@@ -510,7 +512,7 @@ function slug(t,max=40){ return (String(t||'image').replace(/[\\/:*?"<>|\s]+/g,'
 /* ---------------------------------- 模型目录 -------------------------------- */
 
 const FAMILIES = [
-  { id:'gpt-image-2.5', prefer:'gpt-image-2.5-flare',      label:'GPT-Image-2.5',        sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9','9:21','1:2','2:1','1:3','3:1'], resolutions:['1k','2k','4k'], quality:['low','medium','high'], maxN:4, maxRefs:16, refs:true, note:'支持比例与精确像素尺寸' },
+  { id:'gpt-image-2.5', prefer:'gpt-image-2.5-ext',      label:'GPT-Image-2.5',        sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9','9:21','1:2','2:1','1:3','3:1'], resolutions:['1k','2k','4k'], quality:['low','medium','high'], maxN:4, maxRefs:16, refs:true, note:'支持比例与精确像素尺寸' },
   { id:'gpt-image-2', prefer:'gpt-image-2',        label:'GPT-Image-2',          sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','5:4','4:5','21:9','9:21','1:2','2:1','1:3','3:1'], resolutions:['1k','2k','4k'], quality:null, maxN:4, maxRefs:15, refs:true, note:'异步任务，支持文生图 / 图生图' },
   { id:'gpt-image-1', prefer:'gpt-image-1.5',        label:'GPT-Image-1 / 1.5',    sizes:['auto','1:1','3:2','2:3'], resolutions:['1k','2k'], quality:['low','medium','high','auto'], maxN:4, maxRefs:15, refs:true, note:'支持透明背景与多种输出格式' },
   { id:'seedream-5', prefer:'seedream-5-0-pro',         label:'Seedream 5.0',         sizes:['auto','1:1','16:9','9:16','4:3','3:4','3:2','2:3','21:9','2:1'], resolutions:['1k','2k','4k'], quality:null, maxN:4, maxRefs:10, refs:true, note:'支持精确像素与图层拆分' },
@@ -583,6 +585,8 @@ const MODEL_OVERRIDES = {
   'gemini-2.5-flash-image-preview':          { resolutions:['1k'], maxN:1 },
   'gemini-2.5-flash-image-preview-official': { resolutions:['1k'], maxN:1 },
   'flux-kontext-pro': { resolutions:null }, 'flux-kontext-max': { resolutions:null },
+  // gpt-image-2.5-ext 用 version（flare/sunburst）区分版本，参数契约里没有 quality
+  'gpt-image-2.5-ext': { quality:null },
 };
 
 const PRICES = {"dall-e-2":{"base":0.02,"res":null},"dall-e-3":{"base":0.04,"res":null},"seedream-4-0":{"base":0.024375,"res":null},"seedream-4-5":{"base":0.0325,"res":null},"seedream-5-0-lite":{"base":0.035,"res":null},"seedream-5-0-pro":{"base":0.045,"res":{"1K":0.0365625,"2K":0.073125,"1.5K":0.0365625}},"flux-2-flex":{"base":null,"res":{"4MP":0.2,"1MP":0.05,"2MP":0.1,"3MP":0.15}},"flux-2-max":{"base":0.1,"res":{"1MP":0.07,"2MP":0.1,"3MP":0.13,"4MP":0.16}},"flux-2-pro":{"base":null,"res":{"2MP":0.045,"3MP":0.06,"4MP":0.075,"1MP":0.03}},"flux-kontext-max":{"base":0.08,"res":null},"flux-kontext-pro":{"base":0.04,"res":null},"gemini-2.5-flash-image-preview":{"base":0.015625,"res":null},"gemini-2.5-flash-image-preview-official":{"base":0.039,"res":null},"gemini-3-pro-image-preview":{"base":0.0375,"res":{"4K":0.05}},"gemini-3-pro-image-preview-official":{"base":0.134,"res":{"4K":0.24}},"gemini-3.1-flash-image-preview":{"base":0.01875,"res":{"0.5K":0.01875,"1K":0.01875,"2K":0.025,"4K":0.03125}},"gemini-3.1-flash-image-preview-official":{"base":0.067,"res":{"0.5K":0.067,"1K":0.067,"2K":0.101,"4K":0.151}},"gemini-3.1-flash-lite-image":{"base":0.04,"res":null},"gemini-3.1-flash-lite-image-ext":{"base":0.015625,"res":null},"gpt-image-1-official":{"base":0.1336,"res":{"1:1":0.1336,"2:3":0.2,"3:2":0.2}},"gpt-image-1.5-official":{"base":0.1064,"res":{"2:3":0.16,"3:2":0.16,"1:1":0.1064}},"gpt-image-2":{"base":0.010625,"res":{"1K":0.010625,"2K":0.0175,"4K":0.02625}},"gpt-image-2-official":{"base":0.2109,"res":{"9:21@2K":0.0045,"4:5":0.0054,"16:9@2K":0.0049,"1:1@4K":0.0199,"3:4@2K":0.0076,"9:21":0.0033,"3:1":0.0162,"1:2":0.0041,"21:9@2K":0.0045,"3:2@4K":0.0136,"3:2@2K":0.0065,"4:3@4K":0.0149,"2:1":0.0041,"1:2@2K":0.0056,"1:3":0.0018,"2:1@2K":0.0056,"9:21@4K":0.0072,"2:3@2K":0.0065,"3:2":0.0049,"4:5@2K":0.0115,"1:3@2K":0.0032,"21:9":0.0033,"1:3@4K":0.0043,"9:16@2K":0.0049,"16:9":0.0038,"4:3@2K":0.0076,"5:4@2K":0.0115,"3:1@2K":0.0032,"4:3":0.0042,"3:4":0.0042,"16:9@4K":0.0113,"9:16":0.0038,"1:2@4K":0.0092,"2:3":0.0049,"5:4":0.0054,"2:1@4K":0.0092,"9:16@4K":0.0113,"3:1@4K":0.0043,"3:4@4K":0.0149,"1:1@2K":0.0121,"21:9@4K":0.0072,"5:4@4K":0.0162,"4:5@4K":0.0162,"2:3@4K":0.0136,"1:1":0.0061}},"gpt-image-2.5-ext":{"base":0.010625,"res":null},"gpt-image-2.5-flare":{"base":null,"res":{"5:4":0.18357,"2:1":0.1416,"21:9":0.11046,"5:4@4K":0.57018,"3:4@4K":0.5295,"16:9@4K":0.40026,"4:5@2K":0.40155,"1:2":0.1416,"3:2@4K":0.47109,"3:2@2K":0.22053,"9:16@2K":0.1695,"3:1@2K":0.11856,"3:4":0.14445,"21:9@4K":0.24588,"9:21":0.11046,"2:3@2K":0.22053,"3:1":0.0642,"9:21@2K":0.15048,"1:1@4K":0.71157,"9:21@4K":0.24588,"2:1@2K":0.19398,"3:4@2K":0.26676,"2:3@4K":0.47109,"4:5@4K":0.57018,"1:3@4K":0.15933,"5:4@2K":0.40155,"1:1":0.21072,"4:3@2K":0.26676,"1:2@4K":0.32394,"4:3@4K":0.5295,"1:3":0.0642,"4:5":0.18357,"1:1@2K":0.42816,"2:3":0.16464,"21:9@2K":0.15048,"9:16@4K":0.40026,"9:16":0.12936,"4:3":0.14445,"16:9@2K":0.1695,"16:9":0.12936,"3:1@4K":0.15933,"3:2":0.16464,"1:3@2K":0.11856,"1:2@2K":0.19398,"2:1@4K":0.32394}},"gpt-image-2.5-sunburst":{"base":null,"res":{"5:4":0.18357,"1:1":0.21072,"4:5":0.18357,"1:3":0.0642,"4:5@2K":0.40155,"16:9@4K":0.40026,"21:9":0.11046,"5:4@2K":0.40155,"1:1@2K":0.42816,"4:5@4K":0.57018,"3:1":0.0642,"3:4@2K":0.26676,"4:3":0.14445,"9:16@2K":0.1695,"3:1@4K":0.15933,"4:3@4K":0.5295,"9:16":0.12936,"16:9":0.12936,"3:1@2K":0.11856,"9:21":0.11046,"1:2@2K":0.19398,"2:3@4K":0.47109,"3:4@4K":0.5295,"1:3@4K":0.15933,"9:16@4K":0.40026,"1:2@4K":0.32394,"2:1@2K":0.19398,"3:4":0.14445,"2:1@4K":0.32394,"9:21@4K":0.24588,"21:9@2K":0.15048,"3:2@4K":0.47109,"3:2":0.16464,"1:3@2K":0.11856,"5:4@4K":0.57018,"21:9@4K":0.24588,"1:1@4K":0.71157,"1:2":0.1416,"3:2@2K":0.22053,"16:9@2K":0.1695,"2:3@2K":0.22053,"9:21@2K":0.15048,"2:3":0.16464,"2:1":0.1416,"4:3@2K":0.26676}},"grok-imagine-1.0-apimart":{"base":0.01875,"res":null},"grok-imagine-1.0-edit-apimart":{"base":0.01875,"res":null},"grok-imagine-1.5-apimart":{"base":0.01875,"res":null},"grok-imagine-1.5-edit-apimart":{"base":0.01875,"res":null},"grok-imagine-2.0-ext":{"base":0.01875,"res":null},"grok-imagine-image":{"base":0.02,"res":{"1K":0.02,"2K":0.02}},"grok-imagine-image-2.0":{"base":0.06,"res":{"1K":0.06,"2K":0.08}},"grok-imagine-image-quality":{"base":0.05,"res":{"1K":0.05,"2K":0.07}},"imagen-4.0-apimart":{"base":0.05,"res":null},"midjourney":{"base":0.0563,"res":null},"qwen-image-2.0":{"base":0.025,"res":null},"qwen-image-2.0-pro":{"base":0.0625,"res":null},"qwen-image-3.0":{"base":0.025714,"res":{"1K":0.025714,"2K":0.025714}},"qwen-image-3.0-pro":{"base":0.035714,"res":{"1K":0.035714,"2K":0.071429}},"wan2.5-preview":{"base":null,"res":{"480P":0.042,"720P":0.083,"1080P":0.137}},"wan2.6":{"base":0.0625,"res":{"1080P":0.105}},"wan2.7":{"base":0.083,"res":{"1080P":0.137}},"wan2.7-image":{"base":0.027,"res":null},"wan2.7-image-pro":{"base":0.068,"res":null},"z-image-turbo":{"base":0.0125,"res":null},"chatgpt-image-latest":{"base":0.04,"res":null},"gpt-image-1":{"base":0.04,"res":null},"gpt-image-1-mini":{"base":0.02,"res":null},"gpt-image-1.5":{"base":0.05,"res":null},"ltx-2.3-text-image":{"base":0.03,"res":null}};   // 来自官网价格接口，单位 USD；credits = USD × 8
@@ -595,6 +599,15 @@ function priceOf(modelId, res) {
   if (p.res) { const v = Object.values(p.res)[0]; if (v != null) return v; }
   return p.base == null ? null : p.base;
 }
+/** 该模型在该档位是否有明确价格（价格接口没给分档表时，只认第一档） */
+function priceKnown(fam, modelId, res) {
+  const p = PRICES[modelId];
+  if (!p) return false;
+  if (p.res) return p.res[String(res).toUpperCase()] != null;
+  const levels = (fam && fam.resolutions) || ['1k'];
+  return String(res).toLowerCase() === String(levels[0]).toLowerCase();
+}
+
 function priceTag(modelId) {
   const p = PRICES[modelId];
   if (!p) return '';
@@ -738,10 +751,8 @@ function renderModelSelect(keep){
     shown = state.official ? list.filter(m=>/-official$/.test(m.id)) : list.filter(m=>!/-official$/.test(m.id));
     if (!shown.length) shown = list;
   }
-  $('#modelSel').innerHTML = shown.map(m => {
-    const t = priceTag(m.id);
-    return `<option value="${esc(m.id)}">${esc(m.id)}${t?(' · '+esc(t)):''}</option>`;
-  }).join('');
+  // 下拉里只显示模型名称（价格看下方金额行与模型说明）
+  $('#modelSel').innerHTML = shown.map(m => `<option value="${esc(m.id)}">${esc(m.id)}</option>`).join('');
   if (keep && shown.some(m=>m.id===keep)) {
     $('#modelSel').value = keep;
   } else if (shown.length > 1) {
@@ -773,7 +784,11 @@ function onModelChange(){
   if (hasRes) {
     const keepRes = $('#resolutionSel').value;   // 保留用户当前选择，避免被默认值覆盖
     const wantRes = (keepRes && fam.resolutions.includes(keepRes)) ? keepRes : defaultResolution(fam, id);
-    fill($('#resolutionSel'), fam.resolutions.map(r=>({v:r,t:r.toUpperCase()+(priceOf(id,r)?(' · '+credText(priceOf(id,r))):'')})), wantRes);
+    const famBase = currentFamily();
+    fill($('#resolutionSel'), fam.resolutions.map(r=>({
+      v: r,
+      t: r.toUpperCase() + (priceKnown(famBase, id, r) && priceOf(id,r)!=null ? (' · '+credText(priceOf(id,r))) : ''),
+    })), wantRes);
   } else {
     $('#resolutionSel').innerHTML = '';
     $('#resolutionWrap') && ($('#resolutionWrap').hidden = true);
@@ -798,6 +813,9 @@ function onModelChange(){
   $('#refHint').textContent = refsOn ? `最多 ${fam.maxRefs||4} 张` : '该模型不支持参考图';
   if (!refsOn) { state.refs = []; renderRefs(); }
 
+  // gpt-image-2.5-ext 需要 version 参数（flare / sunburst）
+  $('#versionField').hidden = (id !== 'gpt-image-2.5-ext');
+
   $('#modelHint').textContent = (m && (m.capability_tags||[]).join(' · ')) + (fam.note?(' ｜ '+fam.note):'');
   updateCost();
 }
@@ -810,12 +828,14 @@ function defaultResolution(fam, id){
 
 function updateCost(){
   const id = currentModelId();
+  const fam = currentFamily();
   const res = ($('#resolutionSel').value||'').toUpperCase();
   const unit = priceOf(id, res);
+  const known = priceKnown(fam, id, res) && unit != null;
   const n = Number($('#countSel').value||1);
-  const total = unit==null ? null : unit*n;
+  const total = known ? unit*n : null;
   $('#costLine').innerHTML = total==null
-    ? '<span class="hint">价格未知（以官网为准）</span>'
+    ? `<span class="hint">${res?res+' 档':'该模型'}价格未公布，以官网账单为准</span>`
     : `${n} 张 · ${credText(unit)}/张 ＝ <b>${credText(total)}</b> <span class="hint">(${money(total)})</span>`;
   const btn = $('#runBtn');
   btn.textContent = 'RUN';
@@ -871,6 +891,7 @@ function buildPayload(){
     if (/^grok-imagine-2/.test(id)) p.aspect_ratio = size; else p.size = size;
   }
   if (fam.quality && fam.quality.length) p.quality = $('#qualitySel').value;
+  if (id === 'gpt-image-2.5-ext') p.version = $('#versionSel').value || 'flare';
   if (state.refs.length && fam.refs) p.image_urls = state.refs.slice(0, fam.maxRefs||4);
   if ($('#moderationChk').checked) p.moderation = true;
   return p;
@@ -955,6 +976,7 @@ function paramsChips(rec){
   if (p.aspect_ratio) out.push('宽高比 ' + p.aspect_ratio);
   if (p.n) out.push('数量 ' + p.n);
   if (p.quality) out.push('质量 ' + p.quality);
+  if (p.version) out.push('版本 ' + p.version);
   if (rec.refCount) out.push('参考图 ' + rec.refCount);
   return out.map(t=>`<span class="chip">${esc(t)}</span>`).join('');
 }
@@ -1000,8 +1022,8 @@ function cardHtml(rec){
 
 function renderStage(){
   const body = $('#stageBody');
-  const list = state.view === 'history' ? state.history.slice() : state.history.slice(0, 20);
-  $('#stageTitle').textContent = state.view === 'history' ? '生成记录' : '生成结果';
+  const list = state.history.slice(0, 20);
+  $('#stageTitle').textContent = '生成结果';
   $('#stageMeta').textContent = state.history.length ? `共 ${state.history.length} 条记录 · 图片链接由服务商限时提供，请及时下载` : '';
   if (!list.length) { body.innerHTML = '<div class="empty">暂无生成记录。</div>'; return; }
   body.innerHTML = list.map(cardHtml).join('');
@@ -1041,6 +1063,7 @@ function reuse(rec){
   if (p.aspect_ratio) $('#sizeSel').value = p.aspect_ratio;
   if (p.n) $('#countSel').value = String(p.n);
   if (p.quality) $('#qualitySel').value = p.quality;
+  if (p.version) $('#versionSel').value = p.version;
   updateCost();
   toast('参数已回填','ok');
 }
@@ -1118,7 +1141,7 @@ function bind(){
   $('#familySel').onchange = ()=>renderModelSelect();
   $('#modelSel').onchange = onModelChange;
   $('#resolutionSel').onchange = ()=>{ onModelChange(); updateCost(); };
-  ['#sizeSel','#countSel','#qualitySel'].forEach(s=>$(s).onchange = updateCost);
+  ['#sizeSel','#countSel','#qualitySel','#versionSel'].forEach(s=>$(s).onchange = updateCost);
   $('#officialSw').onclick = ()=>{
     state.official = !state.official;
     $('#officialSw').classList.toggle('on', state.official);
@@ -1136,7 +1159,6 @@ function bind(){
 
   $('#runBtn').onclick = run;
   $('#resetBtn').onclick = ()=>{ $('#promptInput').value=''; state.refs=[]; renderRefs(); onModelChange(); };
-  $('#btnHistory').onclick = ()=>switchView('history');
   $$('.side-nav button[data-cat]').forEach(b=>b.onclick = ()=>switchView('image'));
   $('#lbClose').onclick = closeLb;
   $('#lightbox').onclick = e=>{ if(e.target.id==='lightbox') closeLb(); };
